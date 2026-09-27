@@ -866,21 +866,26 @@ window.MicroCosmos = window.MicroCosmos || {};
   // Investigador revisando triple monitor con ADN, Heatmap RNA-seq y Proteína 3D
   // ==========================================================================
   function drawBioinformaticsScene(ctx, localTime, globalTime) {
+    const deskY = 122;
+
     // 1. Ambiente del Centro de Bioinformática en el Laboratorio
     PixelGFX.rect(ctx, 0, 0, WIDTH, HEIGHT, '#0b1324');
-    PixelGFX.rect(ctx, 0, 0, WIDTH, 122, '#111c33');
+    PixelGFX.rect(ctx, 0, 0, WIDTH, deskY, '#111c33');
 
     for (let x = 32; x < WIDTH; x += 48) {
-      PixelGFX.line(ctx, x, 0, x, 122, '#1a2a4a');
+      PixelGFX.line(ctx, x, 0, x, deskY, '#1a2a4a');
     }
     PixelGFX.line(ctx, 0, 28, WIDTH - 1, 28, '#1a2a4a');
 
-    // 2. Torre Secuenciadora de Alto Rendimiento (NGS Sequencer) a la izquierda
+    // 2. Torre Secuenciadora de Alto Rendimiento (NGS Sequencer) apoyada sobre la mesada (y = 24..122)
     const seqX = 8;
-    const seqY = 18;
-    PixelGFX.rect(ctx, seqX, seqY, 34, 98, PAL.metalDark);
-    PixelGFX.rect(ctx, seqX + 2, seqY + 2, 30, 94, '#162238');
-    PixelGFX.rectOutline(ctx, seqX, seqY, 34, 98, PAL.metalMid);
+    const seqY = 24;
+    const seqH = deskY - seqY;
+    PixelGFX.rect(ctx, seqX, seqY, 34, seqH, PAL.metalDark);
+    PixelGFX.rect(ctx, seqX + 2, seqY + 2, 30, seqH - 4, '#162238');
+    PixelGFX.rectOutline(ctx, seqX, seqY, 34, seqH, PAL.metalMid);
+    // Base inferior apoyada en el escritorio
+    PixelGFX.rect(ctx, seqX - 1, deskY - 3, 36, 3, PAL.metalLight);
     PixelGFX.rect(ctx, seqX + 5, seqY + 10, 24, 34, PAL.screenBg);
     const baseColors = [PAL.chloroplast, PAL.neonPinkLight, PAL.neonCyan, PAL.starGold];
     for (let r = 0; r < 6; r++) {
@@ -894,13 +899,18 @@ window.MicroCosmos = window.MicroCosmos || {};
       PixelGFX.rect(ctx, seqX + 6, seqY + 52 + b * 6, bw, 3, b % 2 === 0 ? PAL.neonCyan : PAL.chloroplast);
     }
 
-    // 3. Estación de Trabajo de Triple Monitor Bioinformático
+    // 3. Estación de Trabajo de Triple Monitor Bioinformático (con soportes y bases apoyados en deskY = 122)
     // A) Monitor Izquierdo: Estructura 3D de Proteína Vegetal + Árbol Filogenético
     const m1X = 48;
-    const m1Y = 24;
+    const m1Y = 36;
     const m1W = 62;
     const m1H = 54;
-    PixelGFX.rect(ctx, m1X + 26, m1Y + m1H, 10, 18, PAL.metalMid);
+    // Columna y base del soporte apoyadas sobre el escritorio (y = 90..122)
+    PixelGFX.rect(ctx, m1X + 26, m1Y + m1H, 10, deskY - (m1Y + m1H), PAL.metalDark);
+    PixelGFX.rect(ctx, m1X + 28, m1Y + m1H, 6, deskY - (m1Y + m1H), PAL.metalMid);
+    PixelGFX.rect(ctx, m1X + 16, deskY - 3, 30, 3, PAL.metalLight);
+    PixelGFX.line(ctx, m1X + 16, deskY - 3, m1X + 45, deskY - 3, PAL.metalShine);
+    // Marco y pantalla del monitor izquierdo
     PixelGFX.rect(ctx, m1X - 2, m1Y - 2, m1W + 4, m1H + 4, PAL.metalLight);
     PixelGFX.rect(ctx, m1X, m1Y, m1W, m1H, PAL.screenBg);
     PixelGFX.rect(ctx, m1X, m1Y, m1W, 5, '#153252');
@@ -935,11 +945,15 @@ window.MicroCosmos = window.MicroCosmos || {};
 
     // B) Monitor Central Ultrawide: Alineamiento de Secuencias ADN/ARN, Heatmap RNA-seq y Volcano Plot
     const m2X = 114;
-    const m2Y = 16;
+    const m2Y = 28;
     const m2W = 108;
     const m2H = 64;
-    PixelGFX.rect(ctx, m2X + 48, m2Y + m2H, 12, 16, PAL.metalMid);
-    PixelGFX.rect(ctx, m2X + 36, m2Y + m2H + 14, 36, 3, PAL.metalLight);
+    // Columna robusta y base del monitor central apoyadas firmemente en deskY = 122
+    PixelGFX.rect(ctx, m2X + 47, m2Y + m2H, 14, deskY - (m2Y + m2H), PAL.metalDark);
+    PixelGFX.rect(ctx, m2X + 49, m2Y + m2H, 10, deskY - (m2Y + m2H), PAL.metalMid);
+    PixelGFX.rect(ctx, m2X + 34, deskY - 3, 40, 3, PAL.metalLight);
+    PixelGFX.line(ctx, m2X + 34, deskY - 3, m2X + 73, deskY - 3, PAL.metalShine);
+    // Marco y pantalla del monitor central
     PixelGFX.rect(ctx, m2X - 2, m2Y - 2, m2W + 4, m2H + 4, PAL.equipWhite);
     PixelGFX.rect(ctx, m2X, m2Y, m2W, m2H, PAL.screenBg);
     PixelGFX.rect(ctx, m2X, m2Y, m2W, 5, '#0f3654');
@@ -998,8 +1012,8 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
 
     const hitActive = localTime > 3.2;
-    const hitTargetX = vpX + 36;
-    const hitTargetY = vpY + 7;
+    const hitTargetX = vpX + 34;
+    const hitTargetY = vpY + 8;
     if (hitActive) {
       PixelGFX.circleOutline(ctx, hitTargetX, hitTargetY, 3 + (Math.floor(globalTime * 6) % 2), PAL.starGold);
       PixelGFX.pset(ctx, hitTargetX, hitTargetY, PAL.white);
@@ -1009,9 +1023,15 @@ window.MicroCosmos = window.MicroCosmos || {};
 
     // C) Monitor Derecho: Correlación Fenómica (Riego/Estomas vs Expresión Génica)
     const m3X = 248;
-    const m3Y = 24;
+    const m3Y = 36;
     const m3W = 64;
-    const m3H = 52;
+    const m3H = 54;
+    // Columna y base del monitor derecho apoyadas en el escritorio (y = 90..122)
+    PixelGFX.rect(ctx, m3X + 27, m3Y + m3H, 10, deskY - (m3Y + m3H), PAL.metalDark);
+    PixelGFX.rect(ctx, m3X + 29, m3Y + m3H, 6, deskY - (m3Y + m3H), PAL.metalMid);
+    PixelGFX.rect(ctx, m3X + 17, deskY - 3, 30, 3, PAL.metalLight);
+    PixelGFX.line(ctx, m3X + 17, deskY - 3, m3X + 46, deskY - 3, PAL.metalShine);
+    // Marco y pantalla del monitor derecho
     PixelGFX.rect(ctx, m3X - 2, m3Y - 2, m3W + 4, m3H + 4, PAL.metalLight);
     PixelGFX.rect(ctx, m3X, m3Y, m3W, m3H, PAL.screenBg);
     PixelGFX.rect(ctx, m3X, m3Y, m3W, 5, '#153252');
@@ -1023,11 +1043,10 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
 
     // 4. Silla Ergonómica y Personaje Bioinformático (dibujado ANTES de la superficie del escritorio)
-    const deskY = 122;
     const isPointing = localTime > 3.6;
-    const headBaseX = 230;
+    const headBaseX = 223;
     const headBaseY = 54;
-    const torsoX = 213;
+    const torsoX = 206;
     const torsoY = 74;
 
     // Respaldo de silla ergonómica de laboratorio detrás de la investigadora
@@ -1113,29 +1132,29 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, lx, ly - 4 + browOffset, lx + 3, ly - 4 + browOffset, PAL.hairMid);
     PixelGFX.line(ctx, rx + 1, ry - 4 + browOffset, rx + 5, ry - 4 + browOffset, PAL.hairMid);
 
-    // 5. Escritorio Técnico y Teclado Mecánico Retroiluminado (en primer plano sobre la cintura)
+    // 5. Escritorio Técnico y Teclado Mecánico Retroiluminado (ubicado justo frente a la investigadora)
     PixelGFX.rect(ctx, 0, deskY, WIDTH, HEIGHT - deskY, '#1e293b');
     PixelGFX.rect(ctx, 0, deskY, WIDTH, 4, '#475569');
     PixelGFX.line(ctx, 0, deskY, WIDTH - 1, deskY, PAL.neonCyan);
 
-    const kbX = 142;
+    const kbX = 176;
     const kbY = deskY - 5;
-    PixelGFX.rect(ctx, kbX, kbY, 46, 6, PAL.metalDark);
-    PixelGFX.line(ctx, kbX + 1, kbY + 5, kbX + 44, kbY + 5, PAL.neonCyan);
-    for (let k = 0; k < 12; k++) {
-      const activeKey = (Math.floor(localTime * 12) + k * 3) % 12 === 0;
+    PixelGFX.rect(ctx, kbX, kbY, 42, 6, PAL.metalDark);
+    PixelGFX.line(ctx, kbX + 1, kbY + 5, kbX + 40, kbY + 5, PAL.neonCyan);
+    for (let k = 0; k < 11; k++) {
+      const activeKey = (Math.floor(localTime * 12) + k * 3) % 11 === 0;
       PixelGFX.rect(ctx, kbX + 3 + k * 3, kbY + 1, 2, 2, activeKey ? PAL.chloroplast : PAL.metalLight);
     }
 
-    // 6. AMBOS BRAZOS ARTICULADOS EN LA ESTACIÓN BIOINFORMÁTICA
-    // A) Brazo Derecho (tecleando o apuntando hacia el Volcano Plot a la izquierda de su rostro, sin tapar la cara)
+    // 6. AMBOS BRAZOS ARTICULADOS CON PROPORCIÓN ANATÓMICA (~16px brazo + ~18px antebrazo)
+    // A) Brazo Derecho (tecleando en la mitad izquierda del teclado o señalando el Volcano Plot cercano)
     const pointT = MathUtil.smoothstep(3.5, 4.1, localTime);
-    const rShoulderX = torsoX + 10;
-    const rShoulderY = torsoY + 13;
-    const rElbowX = Math.round(MathUtil.lerp(torsoX - 1, torsoX - 8, pointT));
-    const rElbowY = Math.round(MathUtil.lerp(torsoY + 29, torsoY + 20, pointT));
-    const rWristX = Math.round(MathUtil.lerp(kbX + 16, hitTargetX + 8, pointT));
-    const rWristY = Math.round(MathUtil.lerp(kbY - 1, hitTargetY + 14, pointT));
+    const rShoulderX = torsoX + 10; // 216
+    const rShoulderY = torsoY + 13; // 87
+    const rElbowX = Math.round(MathUtil.lerp(torsoX - 1, torsoX - 4, pointT)); // 205 -> 202
+    const rElbowY = Math.round(MathUtil.lerp(torsoY + 28, torsoY + 22, pointT)); // 102 -> 96 (16px desde hombro)
+    const rWristX = Math.round(MathUtil.lerp(kbX + 14, hitTargetX - 2, pointT)); // 190 -> 196
+    const rWristY = Math.round(MathUtil.lerp(kbY - 1, hitTargetY + 9, pointT)); // 116 -> 78 (18px desde codo)
 
     drawArmSegment(ctx, rShoulderX, rShoulderY, 4.0, rElbowX, rElbowY, 3.4, false);
     drawArmSegment(ctx, rElbowX, rElbowY, 3.4, rWristX, rWristY, 2.8, true);
@@ -1148,14 +1167,14 @@ window.MicroCosmos = window.MicroCosmos || {};
       ctx.drawImage(rightTypeFrame, rWristX - 10, rWristY - 4);
     }
 
-    // B) Brazo Izquierdo en primer plano (tecleando activamente sobre el teclado mecánico)
-    const lShoulderX = torsoX + 25;
-    const lShoulderY = torsoY + 15;
-    const lElbowX = torsoX + 19;
-    const lElbowY = torsoY + 33;
+    // B) Brazo Izquierdo en primer plano (tecleando en la mitad derecha del teclado con proporción natural)
+    const lShoulderX = torsoX + 24; // 230
+    const lShoulderY = torsoY + 15; // 89
+    const lElbowX = torsoX + 18; // 224
+    const lElbowY = torsoY + 30; // 104 (16px desde hombro)
     const typeBob = (Math.floor(localTime * 11) % 2);
-    const lWristX = kbX + 36;
-    const lWristY = kbY - 1 + typeBob;
+    const lWristX = kbX + 32; // 208
+    const lWristY = kbY - 1 + typeBob; // 116 (19px desde codo)
 
     drawArmSegment(ctx, lShoulderX, lShoulderY, 4.2, lElbowX, lElbowY, 3.6, false);
     drawArmSegment(ctx, lElbowX, lElbowY, 3.6, lWristX, lWristY, 3.0, true);
