@@ -121,6 +121,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     const actTitle = document.getElementById('act-title');
     const zoomReadout = document.getElementById('zoom-readout');
     const timeReadout = document.getElementById('time-readout');
+    const captionsBtn = document.getElementById('btn-captions');
     const fullscreenBtn = document.getElementById('btn-fullscreen');
     const actButtons = document.querySelectorAll('[data-jump-time]');
     const uiContainer = document.getElementById('cinema-ui');
@@ -249,6 +250,19 @@ window.MicroCosmos = window.MicroCosmos || {};
       });
     });
 
+    function toggleCaptions() {
+      if (!Transition.toggleHudCaptions) return;
+      const enabled = Transition.toggleHudCaptions();
+      if (captionsBtn) {
+        captionsBtn.classList.toggle('audio-on', enabled);
+      }
+      Transition.renderFrame(ctx, timelineTime);
+    }
+
+    if (captionsBtn) {
+      captionsBtn.addEventListener('click', toggleCaptions);
+    }
+
     if (fullscreenBtn) {
       fullscreenBtn.addEventListener('click', () => {
         ensureAudioUnlocked();
@@ -281,6 +295,8 @@ window.MicroCosmos = window.MicroCosmos || {};
       } else if (e.code === 'KeyM') {
         ns.AudioEngine?.toggleMute();
         syncAudioUI();
+      } else if (e.code === 'KeyC') {
+        toggleCaptions();
       } else if (e.code === 'ArrowRight') {
         ensureAudioUnlocked();
         timelineTime = (timelineTime + 1.5) % LOOP_DURATION;

@@ -620,8 +620,8 @@ window.MicroCosmos = window.MicroCosmos || {};
         PixelGFX.pset(ctx, px, bedY + 4 + rootLen, PAL.chloroplast);
       }
 
-      // B) Tallo aéreo y hojas turgentes sobre el sustrato
-      const stemTopY = py - 18 - lift - (p % 2) * 3;
+      // B) Tallo aéreo, ramas laterales, hojas turgentes y floración/fructificación sobre el sustrato
+      const stemTopY = py - 19 - lift - (p % 2) * 3;
       PixelGFX.line(ctx, px, py, px + sway, stemTopY, PAL.rootWallLight);
       PixelGFX.line(ctx, px + 1, py, px + 1 + sway, stemTopY, PAL.epidermisMid);
 
@@ -636,10 +636,40 @@ window.MicroCosmos = window.MicroCosmos || {};
       PixelGFX.ellipseFill(ctx, px + sway, stemTopY, 4, 3, PAL.chloroplast);
       PixelGFX.pset(ctx, px + sway, stemTopY - 1, PAL.epidermisHighlight);
 
-      // Flor / brote apical en las muestras vigorosas
-      if (plantVigor > 0.5) {
-        PixelGFX.circleFill(ctx, px + sway, stemTopY - 3, 2, p % 2 === 0 ? PAL.sakuraLight : PAL.starGold);
-        PixelGFX.pset(ctx, px + sway, stemTopY - 3, PAL.white);
+      // Floración de cerezo (Sakura) cuando la hidratación supera el 30%
+      if (plantVigor > 0.3) {
+        const fx = px + sway;
+        const fy = stemTopY - 3;
+        PixelGFX.circleFill(ctx, fx, fy, 2, PAL.sakuraLight);
+        PixelGFX.pset(ctx, fx - 1, fy, PAL.sakuraPink);
+        PixelGFX.pset(ctx, fx + 1, fy, PAL.sakuraPink);
+        PixelGFX.pset(ctx, fx, fy, PAL.starGold);
+      }
+
+      // Frutos rojos/terracota (drupas/cerezos CEAF) colgando de las ramas hidratadas
+      if (plantVigor > 0.46) {
+        const fruitGrow = MathUtil.invLerp(0.46, 0.9, plantVigor);
+        const fRadius = fruitGrow > 0.55 ? 2 : 1;
+
+        // Fruto izquierdo con pedúnculo verde
+        const flX = px - leafSpread + 2 + sway;
+        const flY = stemTopY + 12;
+        PixelGFX.line(ctx, px - 2 + sway, stemTopY + 9, flX, flY - 1, PAL.ceafGreen);
+        PixelGFX.circleFill(ctx, flX, flY, fRadius, PAL.ceafFruit);
+        if (fRadius >= 2) {
+          PixelGFX.pset(ctx, flX - 1, flY - 1, PAL.ceafFruitLight);
+        }
+
+        // Segundo fruto derecho en las plantas pares o más vigorosas
+        if (plantVigor > 0.62) {
+          const frX = px + leafSpread - 2 + sway;
+          const frY = stemTopY + 10;
+          PixelGFX.line(ctx, px + 2 + sway, stemTopY + 7, frX, frY - 1, PAL.ceafGreen);
+          PixelGFX.circleFill(ctx, frX, frY, fRadius, PAL.ceafFruit);
+          if (fRadius >= 2) {
+            PixelGFX.pset(ctx, frX - 1, frY - 1, PAL.white);
+          }
+        }
       }
 
       // Gotas de rocío brillando sobre las hojas recién regadas
@@ -685,11 +715,14 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.rect(ctx, torsoX + 18, 160, 11, 5, PAL.metalDark);
     PixelGFX.rect(ctx, torsoX + 19, 160, 9, 3, PAL.white);
 
-    // Macetas de terracota adicionales en el suelo del invernadero (derecha)
+    // Macetas de terracota adicionales en el suelo del invernadero (derecha) con frutos CEAF
     PixelGFX.rect(ctx, 288, 148, 16, 16, PAL.terracottaDark);
     PixelGFX.rect(ctx, 286, 145, 20, 4, PAL.terracottaLight);
     PixelGFX.ellipseFill(ctx, 296, 140, 7, 5, PAL.chloroplast);
     PixelGFX.ellipseFill(ctx, 292, 142, 5, 3, PAL.epidermisWall);
+    PixelGFX.circleFill(ctx, 299, 142, 2, PAL.ceafFruit);
+    PixelGFX.pset(ctx, 298, 141, PAL.ceafFruitLight);
+    PixelGFX.circleFill(ctx, 293, 138, 2, PAL.sakuraLight);
 
     // Coleta larga con movimiento suave de brisa
     const ponyTieX = headBaseX + 15;

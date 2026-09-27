@@ -43,8 +43,22 @@ window.MicroCosmos = window.MicroCosmos || {};
     'X': ['101', '101', '010', '101', '101'],
     'Y': ['101', '101', '010', '010', '010'],
     'Z': ['111', '001', '010', '100', '111'],
+    '0': ['111', '101', '101', '101', '111'],
+    '1': ['010', '110', '010', '010', '111'],
+    '2': ['111', '001', '111', '100', '111'],
+    '3': ['111', '001', '011', '001', '111'],
+    '4': ['101', '101', '111', '001', '001'],
+    '5': ['111', '100', '111', '001', '111'],
+    '6': ['111', '100', '111', '101', '111'],
+    '7': ['111', '001', '010', '010', '010'],
+    '8': ['111', '101', '111', '101', '111'],
+    '9': ['111', '101', '111', '001', '111'],
     '\'': ['010', '010', '000', '000', '000'],
     '.': ['000', '000', '000', '000', '010'],
+    ',': ['000', '000', '000', '010', '100'],
+    ':': ['000', '010', '000', '010', '000'],
+    '·': ['000', '000', '010', '000', '000'],
+    '/': ['001', '001', '010', '100', '100'],
     '-': ['000', '000', '111', '000', '000'],
     ' ': ['000', '000', '000', '000', '000']
   };
@@ -57,16 +71,20 @@ window.MicroCosmos = window.MicroCosmos || {};
     for (let i = 0; i < upper.length; i++) {
       let ch = upper[i];
       let hasAccent = false;
+      let hasTilde = false;
       if (ch === 'Ó') { ch = 'O'; hasAccent = true; }
       else if (ch === 'Í') { ch = 'I'; hasAccent = true; }
       else if (ch === 'Á') { ch = 'A'; hasAccent = true; }
       else if (ch === 'É') { ch = 'E'; hasAccent = true; }
       else if (ch === 'Ú') { ch = 'U'; hasAccent = true; }
+      else if (ch === 'Ñ') { ch = 'N'; hasTilde = true; }
 
       const glyph = FONT_3X5[ch] || FONT_3X5[' '];
       if (hasAccent) {
         PixelGFX.pset(ctx, cx + 1, cy - 2, color);
         PixelGFX.pset(ctx, cx + 2, cy - 3, color);
+      } else if (hasTilde) {
+        PixelGFX.line(ctx, cx, cy - 2, cx + 2, cy - 2, color);
       }
       for (let r = 0; r < 5; r++) {
         const rowStr = glyph[r];
@@ -79,6 +97,9 @@ window.MicroCosmos = window.MicroCosmos || {};
       cx += spacing;
     }
   }
+
+  // Exponer motor tipográfico 3x5 en PixelGFX para rótulos HUD en el lienzo
+  PixelGFX.drawText3x5 = drawPixelText3x5;
 
   // ==========================================================================
   // SPRITES COMPILADOS PARA ELEMENTOS COMPLEJOS DE LOS LOGOS
@@ -323,15 +344,17 @@ window.MicroCosmos = window.MicroCosmos || {};
         }
 
         // Efecto Squash & Stretch en los instantes exactos de impacto contra el suelo (y = 95)
+        // y germinación de pequeños brotes frutales verdes en cada bote ("El Fruto que Siembra")
         const impactTimes = [
-          { t: 0.48, x: 230 },
-          { t: 1.18, x: 258 },
-          { t: 1.74, x: 282 },
-          { t: 2.18, x: 300 },
-          { t: 2.52, x: 313 }
+          { t: 0.48, x: 230, maxH: 8, hasBud: true },
+          { t: 1.18, x: 258, maxH: 7, hasBud: false },
+          { t: 1.74, x: 282, maxH: 6, hasBud: true },
+          { t: 2.18, x: 300, maxH: 5, hasBud: false },
+          { t: 2.52, x: 313, maxH: 4, hasBud: false }
         ];
         for (let i = 0; i < impactTimes.length; i++) {
-          const dtImp = Math.abs(tDrop - impactTimes[i].t);
+          const imp = impactTimes[i];
+          const dtImp = Math.abs(tDrop - imp.t);
           if (dtImp < 0.065) {
             // Achatamiento elástico al tocar el suelo
             rx = i < 2 ? 10 : 9;
@@ -339,9 +362,37 @@ window.MicroCosmos = window.MicroCosmos || {};
             fruitY = 95 - ry;
           }
           // Destello/partículas de impacto en el punto de rebote
-          const sinceImp = tDrop - impactTimes[i].t;
+          const sinceImp = tDrop - imp.t;
           if (sinceImp >= 0 && sinceImp < 0.24) {
-            impactBounce = { x: impactTimes[i].x, p: sinceImp / 0.24, idx: i };
+            impactBounce = { x: imp.x, p: sinceImp / 0.24, idx: i };
+          }
+
+          // Germinación de un pequeño brote verde sobre la línea divisoria tras cada bote
+          if (sinceImp >= 0.08 && i < 4) {
+            const sproutP = MathUtil.easeOutCubic(MathUtil.clamp((sinceImp - 0.08) / 0.45, 0, 1));
+            const sh = Math.max(1, Math.round(imp.maxH * sproutP));
+            const sx = imp.x;
+            const syTop = 95 - sh;
+
+            // Tallo verde del brote
+            PixelGFX.line(ctx, sx, 95, sx, syTop, PAL.ceafGreen);
+
+            // Par de hojitas cotiledonares en pixel-art
+            if (sproutP > 0.35) {
+              PixelGFX.pset(ctx, sx - 1, syTop + 2, PAL.ceafGreen);
+              PixelGFX.pset(ctx, sx - 2, syTop + 1, PAL.ceafGreenLight);
+              PixelGFX.pset(ctx, sx - 3, syTop + 1, PAL.ceafGreenLight);
+
+              PixelGFX.pset(ctx, sx + 1, syTop + 1, PAL.ceafGreen);
+              PixelGFX.pset(ctx, sx + 2, syTop, PAL.ceafGreenLight);
+              PixelGFX.pset(ctx, sx + 3, syTop, PAL.ceafGreenLight);
+            }
+
+            // Yema floral / micro-fruto en el ápice de los brotes principales
+            if (imp.hasBud && sproutP > 0.72) {
+              PixelGFX.pset(ctx, sx, syTop - 1, i === 0 ? PAL.ceafFruit : PAL.sakuraPink);
+              PixelGFX.pset(ctx, sx, syTop - 2, PAL.ceafFruitLight);
+            }
           }
         }
 

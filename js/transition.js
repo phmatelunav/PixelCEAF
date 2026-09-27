@@ -113,7 +113,87 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
   }
 
-  function renderFrame(ctx, time) {
+  let hudCaptionsEnabled = true;
+
+  const HUD_CAPTIONS = [
+    { start: 0.0, end: 5.6, code: '01', label: 'LABORATORIO DE BIOTECNOLOGÍA', accent: PAL.neonCyan },
+    { start: 5.6, end: 8.5, code: '02', label: 'MICROSCOPIO CONFOCAL GFP', accent: PAL.chloroplast },
+    { start: 8.5, end: 14.2, code: '03', label: 'RAÍCES: XILEMA Y FLOEMA', accent: PAL.neonCyan },
+    { start: 14.2, end: 21.0, code: '04', label: 'SIMBIOSIS: MICORRIZAS Y PGPR', accent: PAL.starGold },
+    { start: 21.0, end: 27.4, code: '05', label: 'ESTOMAS Y CLOROPLASTOS', accent: PAL.chloroplast },
+    { start: 27.4, end: 33.8, code: '06', label: 'PIPETEO, PCR Y ELECTROFORESIS', accent: PAL.neonPinkLight },
+    { start: 33.8, end: 40.4, code: '07', label: 'INVERNADERO Y RIZOTRÓN', accent: PAL.ceafGreenLight },
+    { start: 40.4, end: 46.8, code: '08', label: 'BIOINFORMÁTICA RNA-SEQ', accent: PAL.neonCyan },
+    { start: 46.8, end: 51.6, code: '09', label: 'HALLAZGO CIENTÍFICO INTEGRAL', accent: PAL.starGold }
+  ];
+
+  function drawScientificHUDCaption(ctx, time) {
+    if (!hudCaptionsEnabled || !PixelGFX.drawText3x5 || time >= 51.6) return;
+
+    let activeCap = null;
+    for (let i = 0; i < HUD_CAPTIONS.length; i++) {
+      if (time >= HUD_CAPTIONS[i].start && time < HUD_CAPTIONS[i].end) {
+        activeCap = HUD_CAPTIONS[i];
+        break;
+      }
+    }
+    if (!activeCap) return;
+
+    const elapsed = time - activeCap.start;
+    const remaining = activeCap.end - time;
+
+    // Entrada y salida suave mediante matriz de Bayer 4x4 en los bordes de cada escena
+    const fadeAlpha = Math.min(
+      MathUtil.smoothstep(0.0, 0.28, elapsed),
+      MathUtil.smoothstep(0.0, 0.35, remaining)
+    );
+    if (fadeAlpha <= 0.05) return;
+
+    // Efecto máquina de escribir rápida en los primeros 0.45s de cada escena
+    const fullLabel = activeCap.label;
+    const charCount = Math.min(
+      fullLabel.length,
+      Math.max(1, Math.floor((elapsed / 0.45) * fullLabel.length))
+    );
+    const visibleLabel = fullLabel.slice(0, charCount);
+
+    const bx = 6;
+    const by = 165;
+    const bh = 12;
+    const bw = 22 + fullLabel.length * 4 + 6;
+
+    // Fondo oscuro con cola derecha tramada en Bayer 4x4 para máxima legibilidad sobre fondos blancos o oscuros
+    for (let py = by; py < by + bh; py++) {
+      for (let px = bx; px < bx + bw; px++) {
+        const isRightTail = px >= bx + bw - 8;
+        const edgeFade = isRightTail ? (bx + bw - px) / 8 : 1.0;
+        const threshold = (!isRightTail && fadeAlpha > 0.85) ? 1.1 : fadeAlpha * edgeFade;
+        if (threshold > MathUtil.bayer(px, py)) {
+          ctx.fillStyle = '#070e1e';
+          ctx.fillRect(px, py, 1, 1);
+        }
+      }
+    }
+
+    // Borde superior/inferior sutil y barra lateral del color de acento de la escena
+    if (fadeAlpha > 0.35) {
+      PixelGFX.line(ctx, bx, by, bx + bw - 6, by, '#1e3a5f');
+      PixelGFX.line(ctx, bx, by + bh - 1, bx + bw - 6, by + bh - 1, '#1e3a5f');
+      PixelGFX.rect(ctx, bx, by, 2, bh, activeCap.accent);
+
+      // Código numérico de escena (01..09) + separador + título en tipografía 3x5
+      PixelGFX.drawText3x5(ctx, activeCap.code, bx + 5, by + 4, activeCap.accent, 4);
+      PixelGFX.pset(ctx, bx + 15, by + 6, PAL.metalLight);
+      PixelGFX.drawText3x5(ctx, visibleLabel, bx + 19, by + 4, PAL.white, 4);
+
+      // Cursor parpadeante mientras escribe el rótulo
+      if (charCount < fullLabel.length && Math.floor(time * 16) % 2 === 0) {
+        PixelGFX.rect(ctx, bx + 19 + charCount * 4, by + 4, 2, 5, activeCap.accent);
+      }
+    }
+  }
+
+  function renderSceneContent(ctx, time) {
     const BiotechFieldScenes = ns.BiotechFieldScenes;
     const LogoScene = ns.LogoScene;
 
@@ -239,7 +319,23 @@ window.MicroCosmos = window.MicroCosmos || {};
     LabScene.render(ctx, time);
   }
 
+  function renderFrame(ctx, time) {
+    renderSceneContent(ctx, time);
+    drawScientificHUDCaption(ctx, time);
+  }
+
+  function toggleHudCaptions() {
+    hudCaptionsEnabled = !hudCaptionsEnabled;
+    return hudCaptionsEnabled;
+  }
+
+  function isHudCaptionsEnabled() {
+    return hudCaptionsEnabled;
+  }
+
   ns.Transition = {
-    renderFrame
+    renderFrame,
+    toggleHudCaptions,
+    isHudCaptionsEnabled
   };
 })(window.MicroCosmos);
