@@ -149,7 +149,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     function ensureAudioUnlocked() {
       if (!ns.AudioEngine) return;
       const st = ns.AudioEngine.getStatus();
-      if (!st.isUnlocked) {
+      if (!st.isMuted) {
         ns.AudioEngine.unlockAndStart();
         syncAudioUI();
       }
@@ -306,6 +306,13 @@ window.MicroCosmos = window.MicroCosmos || {};
       } else if (e.code === 'KeyF') {
         fullscreenBtn?.click();
       }
+    });
+
+    // Iniciar con el audio encendido por defecto al cargar la animación
+    ns.AudioEngine?.unlockAndStart();
+    syncAudioUI();
+    ['pointerdown', 'keydown', 'touchstart'].forEach((evt) => {
+      window.addEventListener(evt, ensureAudioUnlocked, { passive: true });
     });
 
     wakeUI();

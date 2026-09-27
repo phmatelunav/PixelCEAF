@@ -13,8 +13,8 @@
       <canvas id="stage" width="320" height="180" aria-label="Animación pixel-art de una investigadora en un laboratorio de biología molecular de plantas observando raíces, micorrizas, bacterias y estomas por el microscopio"></canvas>
       <div class="crt-overlay" aria-hidden="true"></div>
 
-      <!-- Aviso flotante para desbloquear el sintetizador Web Audio API con 1 clic -->
-      <button id="audio-unlock-banner" type="button" class="audio-unlock-banner" title="Activar sintetizador Web Audio API">
+      <!-- Aviso flotante para desbloquear el sintetizador Web Audio API con 1 clic (oculto por defecto) -->
+      <button id="audio-unlock-banner" type="button" class="audio-unlock-banner hidden" title="Activar sintetizador Web Audio API">
         🔊 Activar Música y Sonido Sincronizado
       </button>
     </div>
@@ -51,8 +51,8 @@
           <span id="icon-play">❚❚</span>
         </button>
 
-        <button id="btn-audio" type="button" class="ctrl-btn audio-btn" title="Activar / Silenciar Audio Sincronizado (M)" aria-label="Activar o silenciar sonido">
-          <span id="icon-audio">🔇</span>
+        <button id="btn-audio" type="button" class="ctrl-btn audio-btn audio-on" title="Activar / Silenciar Audio Sincronizado (M)" aria-label="Activar o silenciar sonido">
+          <span id="icon-audio">🔊</span>
         </button>
 
         <div class="timeline-track-container">

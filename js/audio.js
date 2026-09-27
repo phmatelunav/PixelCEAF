@@ -28,7 +28,7 @@ window.MicroCosmos = window.MicroCosmos || {};
   let ambientPadGain = null;
 
   let isMuted = false;
-  let isUnlocked = false;
+  let isUnlocked = true;
   let lastStepIndex = -1;
   let lastTime = 0;
 
@@ -759,7 +759,14 @@ window.MicroCosmos = window.MicroCosmos || {};
    * Actualiza de forma continua el Pad Ambiental y dispara los pasos de la partitura según `time`.
    */
   function update(time, isPlaying) {
+    if (!audioCtx && !isMuted) {
+      initAudioGraph();
+    }
     if (!audioCtx || !isUnlocked) return;
+
+    if (!isMuted && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
 
     if (!isPlaying || isMuted || audioCtx.state !== 'running') {
       if (ambientPadGain && audioCtx) {
@@ -849,25 +856,28 @@ window.MicroCosmos = window.MicroCosmos || {};
   }
 
   /**
-   * Desbloquea e inicia el AudioContext tras la primera interacción del usuario
+   * Inicializa y activa el AudioContext por defecto al arrancar
    */
   function unlockAndStart() {
     initAudioGraph();
     if (!audioCtx) return false;
 
     if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
+      audioCtx.resume().catch(() => {});
     }
     isUnlocked = true;
     return !isMuted;
   }
 
   function toggleMute() {
-    if (!isUnlocked) {
-      unlockAndStart();
-      isMuted = false;
-    } else {
-      isMuted = !isMuted;
+    if (!audioCtx) {
+      initAudioGraph();
+    }
+    isUnlocked = true;
+    isMuted = !isMuted;
+
+    if (!isMuted && audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
     }
 
     if (masterGain && audioCtx) {
@@ -880,7 +890,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     return {
       isUnlocked,
       isMuted,
-      isActive: isUnlocked && !isMuted
+      isActive: !isMuted
     };
   }
 
