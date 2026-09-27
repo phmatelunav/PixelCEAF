@@ -331,18 +331,36 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, gelX + 44, gelY + 19, gelX + 50, deskY - 1, PAL.metalMid);
 
     // 5. Investigadora Biotecnóloga en Plano Medio (con Guantes de Nitrilo Cian y Micropipeta)
-    // Ciclo de pipeteo: cada 1.25 segundos pipetea un pocillo distinto (0..4)
-    const cycleDuration = 1.25;
-    const wellIndex = Math.min(4, Math.floor(localTime / cycleDuration));
+    // Ciclo de pipeteo de alta precisión: 5 tubos PCR (0..4) con traslación horizontal + descenso vertical + dispensación + ascenso
+    const cycleDuration = 1.22;
+    const rawWell = Math.floor(localTime / cycleDuration);
+    const wellIndex = Math.min(4, rawWell);
+    const prevWellIndex = Math.max(0, wellIndex - 1);
     const cyclePhase = (localTime % cycleDuration) / cycleDuration;
-    // Bajada de la pipeta entre 0.25 y 0.65 del ciclo
-    const dipProgress = Math.sin(MathUtil.clamp((cyclePhase - 0.15) / 0.6, 0, 1) * Math.PI);
-    const headNod = Math.round(dipProgress * 2);
 
-    const headBaseX = 192;
-    const headBaseY = 48 + headNod;
-    const torsoX = 175;
-    const torsoY = 68;
+    // 4 fases del movimiento robótico/humano de micropipeteo:
+    // - 0.00 .. 0.22: Traslación horizontal suave desde el tubo previo al tubo objetivo (a altura segura)
+    // - 0.22 .. 0.44: Descenso vertical recto de la punta dentro de la boca del tubo
+    // - 0.44 .. 0.68: Émbolo presionado al fondo + dispensación de microgota fluorescente
+    // - 0.68 .. 0.92: Ascenso vertical recto saliendo del tubo
+    let horizT = 1;
+    if (wellIndex > 0 && rawWell <= 4 && cyclePhase < 0.22) {
+      horizT = MathUtil.easeInOutCubic(cyclePhase / 0.22);
+    }
+    let dipProgress = 0;
+    if (cyclePhase >= 0.22 && cyclePhase < 0.44) {
+      dipProgress = MathUtil.easeInOutCubic((cyclePhase - 0.22) / 0.22);
+    } else if (cyclePhase >= 0.44 && cyclePhase < 0.68) {
+      dipProgress = 1;
+    } else if (cyclePhase >= 0.68 && cyclePhase < 0.92) {
+      dipProgress = 1 - MathUtil.easeInOutCubic((cyclePhase - 0.68) / 0.24);
+    }
+    const headNod = Math.round(dipProgress * 1.5);
+
+    const headBaseX = 181;
+    const headBaseY = 51 + headNod;
+    const torsoX = 164;
+    const torsoY = 71;
 
     // Coleta larga detrás de los hombros
     const ponyTieX = headBaseX + 15;
@@ -358,7 +376,7 @@ window.MicroCosmos = window.MicroCosmos || {};
       PixelGFX.rect(ctx, px - w + 1, py, Math.max(1, w + 1), 1, PAL.hairMid);
     }
 
-    // Torso con bata blanca (dibujado antes de la mesada o recortado en deskY)
+    // Torso con bata blanca (recortado en deskY)
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, 0, WIDTH, deskY);
@@ -385,7 +403,7 @@ window.MicroCosmos = window.MicroCosmos || {};
       PixelGFX.pset(ctx, nx + 3, ny, PAL.skinDeep);
     }
 
-    // Cabeza y rostro mirando hacia la placa de pocillos
+    // Cabeza y rostro mirando hacia la gradilla de pocillos
     ctx.drawImage(Sprites.scientistHead || createFallbackHead(), headBaseX - 11, headBaseY - 4);
     // Boca concentrada / sonriente
     PixelGFX.line(ctx, headBaseX - 5, headBaseY + 16, headBaseX - 2, headBaseY + 16, PAL.lips);
@@ -419,74 +437,101 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, lx, ly - 4, lx + 3, ly - 4, PAL.hairMid);
     PixelGFX.line(ctx, rx + 1, ry - 4, rx + 5, ry - 4, PAL.hairMid);
 
-    // 6. Gradilla Iluminada de Microtubos / Placa de 96 Pocillos sobre la Mesada (x = 126..166)
-    const rackX = 128;
-    const rackY = deskY - 14;
-    PixelGFX.rect(ctx, rackX, rackY + 6, 38, 8, PAL.metalDark);
-    PixelGFX.rect(ctx, rackX + 1, rackY + 7, 36, 6, PAL.metalMid);
-    PixelGFX.rect(ctx, rackX + 2, rackY + 12, 34, 2, PAL.neonCyan);
+    // 6. Gradilla Térmica Iluminada de Microtubos PCR justo frente a la investigadora (x = 152..184)
+    const rackX = 152;
+    const rackY = deskY - 18; // 104 (sobre bloque térmico de enfriamiento en la mesada)
 
-    // 5 Tubos de reacción fluorescentes en la gradilla
+    // Coordenadas exactas del centro del tubo objetivo e interpolación suave entre tubos
+    const prevWellCenterX = rackX + 6 + prevWellIndex * 5;
+    const targetWellX = rackX + 6 + wellIndex * 5; // Centros exactos: 158, 163, 168, 173, 178
+    const targetWellY = rackY;                     // Boca superior del tubo: y = 104
+    const tipX = Math.round(MathUtil.lerp(prevWellCenterX, targetWellX, horizT));
+    // La punta baja desde y = 98 (viaje horizontal seguro) hasta y = 104 (entrando en la boca del tubo)
+    const tipY = Math.round(MathUtil.lerp(targetWellY - 6, targetWellY, dipProgress));
+
+    // A) Brazo Derecho (en segundo plano, corto ~11-13px, sujetando el borde derecho de la gradilla)
+    const rShoulderX = torsoX + 9;   // 173
+    const rShoulderY = torsoY + 13;  // 84
+    const rElbowX = torsoX + 6;      // 170 (brazo = 10.4px)
+    const rElbowY = torsoY + 23;     // 94
+    const rWristX = rackX + 28;      // 180 (antebrazo = 13.4px)
+    const rWristY = rackY + 1;       // 105
+
+    drawArmSegment(ctx, rShoulderX, rShoulderY, 3.6, rElbowX, rElbowY, 3.0, false);
+    drawArmSegment(ctx, rElbowX, rElbowY, 3.0, rWristX, rWristY, 2.5, true);
+    PixelGFX.line(ctx, rElbowX - 1, rElbowY - 1, rElbowX + 2, rElbowY - 2, PAL.coatShadow);
+
+    // Base del bloque térmico + gradilla metálica y los 5 tubos PCR translúcidos
+    PixelGFX.rect(ctx, rackX - 1, rackY + 11, 34, 7, PAL.benchEdge);
+    PixelGFX.rect(ctx, rackX, rackY + 5, 32, 7, PAL.metalDark);
+    PixelGFX.rect(ctx, rackX + 1, rackY + 6, 30, 5, PAL.metalMid);
+    PixelGFX.rect(ctx, rackX + 2, rackY + 11, 28, 2, PAL.neonCyan);
+
     for (let w = 0; w < 5; w++) {
-      const wx = rackX + 4 + w * 7;
-      const isFilled = w < wellIndex || (w === wellIndex && cyclePhase > 0.55);
-      // Cuerpo translúcido del tubo PCR
-      PixelGFX.rect(ctx, wx, rackY, 5, 7, PAL.windowFrameWhite);
-      PixelGFX.rect(ctx, wx + 1, rackY + 1, 3, 5, isFilled ? PAL.chloroplast : '#194d47');
+      const wx = rackX + 4 + w * 5; // Tubos en 156, 161, 166, 171, 176 (centro exacto en wx + 2)
+      const isFilled = w < wellIndex || (w === wellIndex && cyclePhase >= 0.54);
+      const isCurrentTarget = (w === wellIndex);
+      // Boca anular y paredes del microtubo PCR
+      PixelGFX.rect(ctx, wx, rackY, 5, 1, isCurrentTarget ? PAL.neonCyanLight : PAL.windowFrameWhite);
+      PixelGFX.rect(ctx, wx, rackY + 1, 5, 5, PAL.windowFrameWhite);
+      PixelGFX.rect(ctx, wx + 1, rackY + 1, 3, 4, isFilled ? PAL.chloroplast : '#194d47');
       if (isFilled) {
         PixelGFX.pset(ctx, wx + 2, rackY + 2, PAL.white);
-        PixelGFX.ditherGlow(ctx, wx + 2, rackY + 3, 2, 7, PAL.chloroplast, 0.55);
+        PixelGFX.ditherGlow(ctx, wx + 2, rackY + 3, 2, 5, PAL.chloroplast, 0.55);
       }
     }
 
-    // Coordenada X del pocillo objetivo actual
-    const targetWellX = rackX + 6 + wellIndex * 7;
-    const targetWellY = rackY;
+    // Mano derecha enguantada estabilizando el lateral de la gradilla
+    ctx.drawImage(glovedRackHandSprite, rWristX - 8, rWristY - 4);
 
-    // 7. AMBOS BRAZOS ARTICULADOS CON GUANTES DE NITRILO CIAN
-    // A) Brazo Derecho (en segundo plano, sujetando y estabilizando la gradilla de tubos)
-    const rShoulderX = torsoX + 9;
-    const rShoulderY = torsoY + 13;
-    const rElbowX = torsoX - 2;
-    const rElbowY = torsoY + 32;
-    const rWristX = rackX + 38;
-    const rWristY = rackY + 6;
+    // B) Brazo Izquierdo (en primer plano, compacto ~11-13px por segmento, sosteniendo la micropipeta)
+    // En glovedPipetteHandSprite (16x22), la punta ('C') está exactamente en (col=8, row=16).
+    // Dibujando el sprite en (tipX - 8, tipY - 16), la punta queda al píxel exacto en (tipX, tipY).
+    const spriteX = tipX - 8;
+    const spriteY = tipY - 16;
 
-    drawArmSegment(ctx, rShoulderX, rShoulderY, 4.0, rElbowX, rElbowY, 3.4, false);
-    drawArmSegment(ctx, rElbowX, rElbowY, 3.4, rWristX, rWristY, 2.8, true);
-    PixelGFX.line(ctx, rElbowX - 1, rElbowY - 1, rElbowX + 2, rElbowY - 2, PAL.coatShadow);
-    ctx.drawImage(glovedRackHandSprite, rWristX - 9, rWristY - 4);
+    const lShoulderX = torsoX + 23; // 187
+    const lShoulderY = torsoY + 14; // 85
+    const lWristX = spriteX + 12;   // tipX + 4 (162..182)
+    const lWristY = spriteY + 5;    // tipY - 11 (87..93)
+    const lElbowX = Math.round(MathUtil.lerp(lShoulderX, lWristX, 0.45)) + 3; // ~178..187 (brazo ~11px, antebrazo ~12px)
+    const lElbowY = torsoY + 24;    // 95
 
-    // B) Brazo Izquierdo (en primer plano, operando la Micropipeta de precisión sobre cada pocillo)
-    const lShoulderX = torsoX + 25;
-    const lShoulderY = torsoY + 15;
-    const lElbowX = torsoX + 19;
-    const lElbowY = torsoY + 33;
-    const pipetteHandX = targetWellX + 8;
-    const pipetteHandY = targetWellY - 19 + Math.round(dipProgress * 4);
-
-    drawArmSegment(ctx, lShoulderX, lShoulderY, 4.2, lElbowX, lElbowY, 3.6, false);
-    drawArmSegment(ctx, lElbowX, lElbowY, 3.6, pipetteHandX + 4, pipetteHandY + 4, 3.0, true);
+    drawArmSegment(ctx, lShoulderX, lShoulderY, 3.8, lElbowX, lElbowY, 3.2, false);
+    drawArmSegment(ctx, lElbowX, lElbowY, 3.2, lWristX, lWristY, 2.6, true);
     PixelGFX.line(ctx, lElbowX - 2, lElbowY - 1, lElbowX + 1, lElbowY - 2, PAL.coatShadow);
 
-    // Mano enguantada + Micropipeta
-    ctx.drawImage(glovedPipetteHandSprite, pipetteHandX - 8, pipetteHandY);
+    // Émbolo superior de la micropipeta (el pulgar baja el émbolo rosa al dispensar en 0.44..0.72)
+    let plungerPress = 0;
+    if (cyclePhase >= 0.40 && cyclePhase < 0.72) {
+      plungerPress = 2;
+    } else if (cyclePhase >= 0.32 && cyclePhase < 0.40) {
+      plungerPress = 1;
+    }
+    PixelGFX.rect(ctx, tipX - 1, spriteY - 2 + plungerPress, 3, 3, PAL.neonPink);
+    PixelGFX.pset(ctx, tipX, spriteY - 2 + plungerPress, PAL.neonPinkLight);
 
-    // Émbolo superior de la micropipeta (baja cuando el pulgar presiona)
-    const plungerPress = (cyclePhase > 0.35 && cyclePhase < 0.70) ? 2 : 0;
-    PixelGFX.rect(ctx, pipetteHandX - 1, pipetteHandY - 3 + plungerPress, 3, 3, PAL.neonPink);
+    // Mano enguantada + Micropipeta alineada al píxel con el centro del tubo (tipX, tipY)
+    ctx.drawImage(glovedPipetteHandSprite, spriteX, spriteY);
+    // Reactivo cian visible en la punta translúcida antes de dispensar
+    if (cyclePhase < 0.50) {
+      PixelGFX.pset(ctx, tipX, tipY - 1, PAL.neonCyanLight);
+      PixelGFX.pset(ctx, tipX, tipY, PAL.white);
+    }
 
-    // Microgota fluorescente cayendo de la punta de la micropipeta al pocillo
-    if (cyclePhase > 0.42 && cyclePhase < 0.68) {
-      const dropFrac = (cyclePhase - 0.42) / 0.26;
-      const dropY = Math.round(MathUtil.lerp(pipetteHandY + 17, targetWellY + 1, dropFrac));
-      PixelGFX.rect(ctx, targetWellX, dropY, 2, 2, PAL.neonCyan);
+    // Microgota fluorescente saliendo exactamente de la punta (tipX, tipY + 1) hacia el interior del tubo
+    if (cyclePhase >= 0.44 && cyclePhase < 0.66) {
+      const dropFrac = (cyclePhase - 0.44) / 0.22;
+      const dropY = Math.round(MathUtil.lerp(tipY, targetWellY + 2, dropFrac));
+      PixelGFX.line(ctx, targetWellX, tipY, targetWellX, dropY, PAL.neonCyan);
       PixelGFX.pset(ctx, targetWellX, dropY, PAL.white);
     }
-    // Destello al dispensar la muestra en el tubo
-    if (cyclePhase >= 0.55 && cyclePhase < 0.82) {
-      const ringR = Math.round(((cyclePhase - 0.55) / 0.27) * 8);
+    // Menisco luminoso y onda de fluorescencia al entrar la muestra en el tubo objetivo
+    if (cyclePhase >= 0.52 && cyclePhase < 0.84) {
+      const ringProgress = (cyclePhase - 0.52) / 0.32;
+      const ringR = Math.max(1, Math.round(ringProgress * 5));
       PixelGFX.circleOutline(ctx, targetWellX, targetWellY + 1, ringR, PAL.neonCyanLight);
+      PixelGFX.pset(ctx, targetWellX, targetWellY + 1, PAL.white);
     }
   }
 
@@ -697,9 +742,9 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
 
     const swayBody = Math.round(Math.sin(localTime * 2.2) * 1);
-    const headBaseX = 258 + swayBody;
+    const headBaseX = 246 + swayBody;
     const headBaseY = 46;
-    const torsoX = 241 + swayBody;
+    const torsoX = 229 + swayBody;
     const torsoY = 66;
 
     // Sombra en el piso del invernadero y piernas/calzado de laboratorio (debajo de la bata)
@@ -792,19 +837,19 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, lx, ly - 4, lx + 3, ly - 4, PAL.hairMid);
     PixelGFX.line(ctx, rx + 1, ry - 4, rx + 5, ry - 4, PAL.hairMid);
 
-    // 7. Regadera Científica / Lanza de Riego y Ambos Brazos Articulados
-    const canX = 212 + swayBody;
-    const canY = 82 + Math.round(Math.sin(localTime * 3.0) * 2);
+    // 7. Regadera Científica / Lanza de Riego y Ambos Brazos Articulados (proporciones cortas y naturales ~13-14px)
+    const canX = 216 + swayBody;
+    const canY = 85 + Math.round(Math.sin(localTime * 3.0) * 1.5);
 
-    // A) Brazo Derecho (sosteniendo el cuerpo/lanza inferior de la regadera)
-    const rShoulderX = torsoX + 10;
-    const rShoulderY = torsoY + 13;
-    const rElbowX = torsoX + 2;
-    const rElbowY = torsoY + 29;
-    const rWristX = canX + 12;
-    const rWristY = canY + 12;
-    drawArmSegment(ctx, rShoulderX, rShoulderY, 4.0, rElbowX, rElbowY, 3.4, false);
-    drawArmSegment(ctx, rElbowX, rElbowY, 3.4, rWristX, rWristY, 2.8, true);
+    // A) Brazo Derecho (sosteniendo el cuerpo inferior de la regadera cerca del torso)
+    const rShoulderX = torsoX + 10; // 239
+    const rShoulderY = torsoY + 13; // 79
+    const rElbowX = torsoX + 5;     // 234 (brazo = 13.0px)
+    const rElbowY = torsoY + 25;    // 91
+    const rWristX = canX + 12;      // 228 (antebrazo en escorzo = 9.2px)
+    const rWristY = canY + 11;      // 96
+    drawArmSegment(ctx, rShoulderX, rShoulderY, 3.8, rElbowX, rElbowY, 3.2, false);
+    drawArmSegment(ctx, rElbowX, rElbowY, 3.2, rWristX, rWristY, 2.6, true);
 
     // Cuerpo de la regadera de laboratorio (acero/turquesa con medidor de volumen)
     PixelGFX.rect(ctx, canX, canY + 2, 18, 14, PAL.metalDark);
@@ -824,15 +869,15 @@ window.MicroCosmos = window.MicroCosmos || {};
 
     ctx.drawImage(handWateringSideSprite, rWristX - 8, rWristY - 4);
 
-    // B) Brazo Izquierdo en primer plano (sujetando el asa superior e inclinando la regadera)
-    const lShoulderX = torsoX + 25;
-    const lShoulderY = torsoY + 15;
-    const lElbowX = torsoX + 19;
-    const lElbowY = torsoY + 30;
-    const lWristX = canX + 14;
-    const lWristY = canY - 3;
-    drawArmSegment(ctx, lShoulderX, lShoulderY, 4.2, lElbowX, lElbowY, 3.6, false);
-    drawArmSegment(ctx, lElbowX, lElbowY, 3.6, lWristX, lWristY, 3.0, true);
+    // B) Brazo Izquierdo en primer plano (compacto ~13.5px por segmento, sujetando el asa superior)
+    const lShoulderX = torsoX + 23; // 252
+    const lShoulderY = torsoY + 14; // 80
+    const lElbowX = torsoX + 15;    // 244 (brazo = 13.6px)
+    const lElbowY = torsoY + 25;    // 91
+    const lWristX = canX + 16;      // 232 (antebrazo = 13.9px)
+    const lWristY = canY - 1;       // 84
+    drawArmSegment(ctx, lShoulderX, lShoulderY, 4.0, lElbowX, lElbowY, 3.4, false);
+    drawArmSegment(ctx, lElbowX, lElbowY, 3.4, lWristX, lWristY, 2.8, true);
     PixelGFX.line(ctx, lElbowX - 2, lElbowY - 1, lElbowX + 1, lElbowY - 2, PAL.coatShadow);
     ctx.drawImage(handWateringTopSprite, lWristX - 9, lWristY - 4);
 
