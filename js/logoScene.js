@@ -224,13 +224,20 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, fStemX + 1, stemTopY, fStemX + 1, stemBottomY - 1, PAL.ceafGreenLight);
 
     if (growT > 0.45) {
+      // Ligero rebote elástico de la rama media cuando el fruto se desprende (localTime ~ 3.1s)
+      let branchSpringY = 0;
+      if (localTime > 3.1 && localTime < 3.9) {
+        const bt = localTime - 3.1;
+        branchSpringY = Math.round(-Math.sin(bt * 18) * Math.exp(-bt * 4) * 2.2);
+      }
+
       // Arco superior de la 'f' (curva hacia arriba a la derecha, dejando aire bajo el borde superior)
       drawThickArc(ctx, fStemX + 17, 28, 17, 13, 180, 272, PAL.ceafGreen);
       PixelGFX.rect(ctx, fStemX + 15, 11, 5, 4, PAL.ceafGreen);
 
       // Arco medio (travesaño curvo de la 'f')
-      drawThickArc(ctx, fStemX + 17, 43, 17, 13, 185, 272, PAL.ceafGreen);
-      PixelGFX.rect(ctx, fStemX + 15, 26, 5, 4, PAL.ceafGreen);
+      drawThickArc(ctx, fStemX + 17, 43 + branchSpringY, 17, 13, 185, 272, PAL.ceafGreen);
+      PixelGFX.rect(ctx, fStemX + 15, 26 + branchSpringY, 5, 4, PAL.ceafGreen);
     }
 
     // Hoja verde lanceolada inclinada hacia arriba-izquierda
@@ -252,25 +259,153 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
 
     // Fruto circular rojo-terracota a la derecha del tallo bajo el arco de la 'f'
+    // Fase 1 (0.72..2.7s): Crece y brilla junto a la 'f'
+    // Fase 2 (2.7..3.1s): Pequeño temblor de madurez antes de soltarse
+    // Fase 3 (3.1s+): Cae y rebota (bouncing con squash & stretch) moviéndose hacia la derecha sobre la línea divisoria (y=95)
     if (growT > 0.72) {
-      const fruitX = fStemX + 20;
-      const fruitY = 48;
-      const fruitR = Math.round(MathUtil.lerp(1, 8, MathUtil.invLerp(0.72, 1.0, growT)));
-      PixelGFX.circleFill(ctx, fruitX, fruitY, fruitR, PAL.ceafFruit);
-      if (fruitR >= 6) {
-        PixelGFX.circleFill(ctx, fruitX - 2, fruitY - 2, 3, PAL.ceafFruitLight);
-        PixelGFX.pset(ctx, fruitX - 3, fruitY - 3, PAL.white);
-      }
-    }
+      const startX = fStemX + 20; // 208
+      const startY = 48;
+      const groundY = 87; // Con radio 8, la base toca exactamente la línea divisoria y = 95
 
-    // Destello sutil animado sobre la hoja y el fruto de CEAF
-    const sparklePhase = (globalTime * 1.5) % 3.0;
-    if (sparklePhase < 0.6 && localTime > 1.2) {
-      const sx = fStemX + 23;
-      const sy = 41;
-      PixelGFX.pset(ctx, sx, sy, PAL.starGold);
-      PixelGFX.line(ctx, sx - 2, sy, sx + 2, sy, PAL.white);
-      PixelGFX.line(ctx, sx, sy - 2, sx, sy + 2, PAL.white);
+      let fruitX = startX;
+      let fruitY = startY;
+      const fruitR = Math.round(MathUtil.lerp(1, 8, MathUtil.invLerp(0.72, 1.0, growT)));
+      let rx = fruitR;
+      let ry = fruitR;
+      let rotAngle = 0;
+      let impactBounce = null;
+
+      if (localTime >= 2.7 && localTime < 3.1) {
+        // Temblor previo a caer
+        fruitX = startX + Math.round(Math.sin((localTime - 2.7) * 45) * 1.2);
+      } else if (localTime >= 3.1) {
+        const tDrop = localTime - 3.1;
+        // Definición de arcos parabólicos sucesivos hacia la derecha:
+        // [tStart, tEnd, x0, x1, apexHeight]
+        const bounces = [
+          { t0: 0.00, t1: 0.48, x0: 208, x1: 230, h: 0, isDrop: true },
+          { t0: 0.48, t1: 1.18, x0: 230, x1: 258, h: 26, isDrop: false },
+          { t0: 1.18, t1: 1.74, x0: 258, x1: 282, h: 16, isDrop: false },
+          { t0: 1.74, t1: 2.18, x0: 282, x1: 300, h: 9, isDrop: false },
+          { t0: 2.18, t1: 2.52, x0: 300, x1: 313, h: 4, isDrop: false }
+        ];
+
+        rotAngle = tDrop * 5.5;
+
+        let foundArc = false;
+        for (let i = 0; i < bounces.length; i++) {
+          const b = bounces[i];
+          if (tDrop >= b.t0 && tDrop < b.t1) {
+            const u = (tDrop - b.t0) / (b.t1 - b.t0);
+            fruitX = Math.round(MathUtil.lerp(b.x0, b.x1, u));
+            if (b.isDrop) {
+              // Caída libre acelerada desde startY (48) hasta groundY (87)
+              fruitY = Math.round(startY + (groundY - startY) * (u * u));
+              if (u > 0.65 && u < 0.94) {
+                rx = 7;
+                ry = 9; // Estiramiento vertical en caída rápida
+              }
+            } else {
+              // Parábola de rebote: 4 * u * (1 - u) vale 0 en los extremos y 1 en el ápice (u=0.5)
+              const parabola = 4 * u * (1 - u);
+              fruitY = Math.round(groundY - b.h * parabola);
+            }
+            foundArc = true;
+            break;
+          }
+        }
+
+        if (!foundArc) {
+          // Después del último rebote (tDrop >= 2.52), rueda suavemente hacia la derecha hasta salir del cuadro
+          const tRoll = tDrop - 2.52;
+          fruitX = Math.round(313 + tRoll * 22);
+          fruitY = groundY;
+        }
+
+        // Efecto Squash & Stretch en los instantes exactos de impacto contra el suelo (y = 95)
+        const impactTimes = [
+          { t: 0.48, x: 230 },
+          { t: 1.18, x: 258 },
+          { t: 1.74, x: 282 },
+          { t: 2.18, x: 300 },
+          { t: 2.52, x: 313 }
+        ];
+        for (let i = 0; i < impactTimes.length; i++) {
+          const dtImp = Math.abs(tDrop - impactTimes[i].t);
+          if (dtImp < 0.065) {
+            // Achatamiento elástico al tocar el suelo
+            rx = i < 2 ? 10 : 9;
+            ry = i < 2 ? 6 : 7;
+            fruitY = 95 - ry;
+          }
+          // Destello/partículas de impacto en el punto de rebote
+          const sinceImp = tDrop - impactTimes[i].t;
+          if (sinceImp >= 0 && sinceImp < 0.24) {
+            impactBounce = { x: impactTimes[i].x, p: sinceImp / 0.24, idx: i };
+          }
+        }
+
+        // Sombra dinámica proyectada sobre la línea divisoria (y = 95)
+        if (fruitX - rx < WIDTH - 6) {
+          const heightAboveGround = Math.max(0, groundY - fruitY);
+          const shadowHalfW = Math.max(2, Math.round(7 - heightAboveGround * 0.12));
+          PixelGFX.line(
+            ctx,
+            Math.max(22, fruitX - shadowHalfW),
+            95,
+            Math.min(WIDTH - 8, fruitX + shadowHalfW),
+            95,
+            '#8fa3b8'
+          );
+        }
+
+        // Dibujar pequeñas chispas pixel-art al rebotar en la línea
+        if (impactBounce) {
+          const spread = Math.round(3 + impactBounce.p * 8);
+          const lift = Math.round((1 - impactBounce.p) * 4);
+          PixelGFX.pset(ctx, impactBounce.x - spread, 94 - lift, PAL.ceafFruitLight);
+          PixelGFX.pset(ctx, impactBounce.x + spread, 94 - lift, PAL.ceafFruitLight);
+          if (impactBounce.idx < 2) {
+            PixelGFX.pset(ctx, impactBounce.x - Math.round(spread * 0.6), 92 - lift, PAL.starGold);
+            PixelGFX.pset(ctx, impactBounce.x + Math.round(spread * 0.6), 92 - lift, PAL.starGold);
+          }
+        }
+      }
+
+      // Dibujar la esfera naranja (dentro del marco visible del lienzo)
+      if (fruitX - rx < WIDTH - 5) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(6, 6, WIDTH - 12, HEIGHT - 12);
+        ctx.clip();
+
+        if (rx === ry) {
+          PixelGFX.circleFill(ctx, fruitX, fruitY, fruitR, PAL.ceafFruit);
+        } else {
+          PixelGFX.ellipseFill(ctx, fruitX, fruitY, rx, ry, PAL.ceafFruit);
+        }
+
+        // Brillo especular que rota suavemente mientras la esfera avanza y rebota
+        if (fruitR >= 6) {
+          const hx = fruitX + Math.round(Math.cos(rotAngle - 2.35) * 2.8);
+          const hy = fruitY + Math.round(Math.sin(rotAngle - 2.35) * 2.4);
+          PixelGFX.circleFill(ctx, hx, hy, 2, PAL.ceafFruitLight);
+          PixelGFX.pset(ctx, hx - 1, hy - 1, PAL.white);
+        }
+        ctx.restore();
+      }
+
+      // Destello sutil inicial sobre el fruto antes de que empiece a caer
+      if (localTime > 1.2 && localTime < 2.6) {
+        const sparklePhase = (localTime - 1.2) % 1.4;
+        if (sparklePhase < 0.55) {
+          const sx = startX + 3;
+          const sy = startY - 7;
+          PixelGFX.pset(ctx, sx, sy, PAL.starGold);
+          PixelGFX.line(ctx, sx - 2, sy, sx + 2, sy, PAL.white);
+          PixelGFX.line(ctx, sx, sy - 2, sx, sy + 2, PAL.white);
+        }
+      }
     }
   }
 
@@ -486,10 +621,8 @@ window.MicroCosmos = window.MicroCosmos || {};
       PixelGFX.pset(ctx, px, py, col);
     }
 
-    // 2. LOGO PRINCIPAL EN LA MITAD SUPERIOR: CEAF (Centro de Estudios Avanzados en Fruticultura)
-    drawCEAFMainLogo(ctx, localTime, time);
-
-    // 3. Línea Divisoria Institucional con Detalle Botánico/Científico (y = 95)
+    // 2. Línea Divisoria Institucional con Detalle Botánico/Científico (y = 95)
+    // Se dibuja antes del logo CEAF para que la esfera naranja rebote y proyecte sombra sobre ella
     const lineProgress = MathUtil.easeOutCubic(MathUtil.clamp((localTime - 0.6) / 0.8, 0, 1));
     if (lineProgress > 0.01) {
       const halfSpan = Math.round(138 * lineProgress);
@@ -497,6 +630,9 @@ window.MicroCosmos = window.MicroCosmos || {};
       PixelGFX.line(ctx, 160 - Math.round(halfSpan * 0.35), 95, 160 + Math.round(halfSpan * 0.35), 95, PAL.ceafGreen);
       PixelGFX.pset(ctx, 160, 95, PAL.ceafFruit);
     }
+
+    // 3. LOGO PRINCIPAL EN LA MITAD SUPERIOR: CEAF (Centro de Estudios Avanzados en Fruticultura)
+    drawCEAFMainLogo(ctx, localTime, time);
 
     // 4. FILA INFERIOR DE LOGOS CORPORATIVOS (GORE, CORE y ANID)
     // Aparecen escalonadamente con efecto Bayer-dither entre localTime = 0.9s y 2.2s

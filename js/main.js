@@ -77,7 +77,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     },
     {
       start: 52.0,
-      end: 58.0,
+      end: 60.0,
       badge: 'CIERRE INSTITUCIONAL',
       title: 'CEAF · GORE · CORE · ANID — Región de O\'Higgins',
       zoomLabel: 'CEAF · Fruticultura Avanzada'

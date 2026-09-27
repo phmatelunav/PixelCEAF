@@ -674,7 +674,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
 
     // ------------------------------------------------------------------
-    // CAPÍTULO 10: CIERRE INSTITUCIONAL CEAF + GORE, CORE, ANID (52.0s .. 58.0s)
+    // CAPÍTULO 10: CIERRE INSTITUCIONAL CEAF + GORE, CORE, ANID (52.0s .. 60.0s)
     // ------------------------------------------------------------------
     if (time >= 52.0) {
       // En 52.2s (step 261): Acorde cristalino cuando aparece el logo principal de CEAF y su hoja/fruto
@@ -701,6 +701,34 @@ window.MicroCosmos = window.MicroCosmos || {};
           modRatio: 2.0,
           modIndex: 80,
           volume: 0.075
+        });
+      }
+
+      // Efectos sonoros de rebote ("bouncing") cuando la esfera naranja de CEAF cae y rebota hacia la derecha
+      // Impactos en t = 55.58s (step 278), 56.28s (step 281), 56.84s (step 284), 57.28s (step 286), 57.62s (step 288)
+      const bounceSteps = {
+        278: { freq: 340, midi: 79, vol: 0.095 },
+        281: { freq: 420, midi: 83, vol: 0.08 },
+        284: { freq: 500, midi: 86, vol: 0.065 },
+        286: { freq: 580, midi: 88, vol: 0.05 },
+        288: { freq: 660, midi: 91, vol: 0.038 }
+      };
+      if (bounceSteps[step]) {
+        const b = bounceSteps[step];
+        playSweepFX({
+          startFreq: b.freq * 0.65,
+          endFreq: b.freq * 1.45,
+          duration: 0.085,
+          type: 'sine',
+          volume: b.vol,
+          sendDelay: true
+        });
+        playFMChime({
+          midi: b.midi,
+          duration: 0.22,
+          modRatio: 2.0,
+          modIndex: 60,
+          volume: b.vol * 0.75
         });
       }
 

@@ -12,7 +12,7 @@ window.MicroCosmos = window.MicroCosmos || {};
 
   ns.WIDTH = 320;
   ns.HEIGHT = 180;
-  ns.LOOP_DURATION = 58.0;
+  ns.LOOP_DURATION = 60.0;
 
   const PAL = {
     // Tonos base y Laboratorio Clínico Blanco
