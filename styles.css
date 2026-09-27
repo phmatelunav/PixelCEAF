@@ -1,0 +1,303 @@
+/* styles.css - Marco cinematográfico y escalado Pixel-Art auténtico (320x180 -> 16:9) */
+
+:root {
+  --bg-void: #04050c;
+  --panel-bg: rgba(11, 14, 34, 0.86);
+  --border-cyan: rgba(0, 245, 212, 0.28);
+  --neon-cyan: #00f5d4;
+  --neon-pink: #f72585;
+  --star-gold: #ffbe0b;
+  --text-main: #eaf2ff;
+  --text-muted: #7e92b8;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-void);
+  background-image:
+    radial-gradient(circle at 50% 42%, rgba(58, 12, 163, 0.22) 0%, transparent 65%),
+    radial-gradient(circle at 50% 50%, rgba(0, 245, 212, 0.08) 0%, transparent 80%);
+  color: var(--text-main);
+  font-family: 'Courier New', Consolas, Monaco, monospace;
+  overflow: hidden;
+  user-select: none;
+}
+
+.viewport-wrapper {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 24px 68px;
+}
+
+.stage-frame {
+  position: relative;
+  width: min(92vw, calc((92vh - 76px) * (16 / 9)));
+  aspect-ratio: 16 / 9;
+  background: #05060f;
+  border: 2px solid rgba(114, 239, 221, 0.32);
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 4px rgba(10, 13, 32, 0.95),
+    0 20px 60px rgba(0, 0, 0, 0.85),
+    0 0 42px rgba(0, 245, 212, 0.14),
+    0 0 85px rgba(247, 37, 133, 0.09);
+  overflow: hidden;
+}
+
+/* Escalado Pixel-Perfect estricto sin suavizado borroso */
+#stage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Scanlines CRT muy sutiles opcionales para realzar la textura retro */
+.crt-overlay {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.14) 50%
+  );
+  background-size: 100% 4px;
+  opacity: 0.35;
+}
+
+/* Barra de control inferior auto-ocultable */
+.cinema-ui {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(92vw, 880px);
+  background: var(--panel-bg);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-cyan);
+  border-radius: 8px;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  z-index: 20;
+}
+
+.cinema-ui.ui-idle {
+  opacity: 0.12;
+  transform: translateX(-50%) translateY(4px);
+}
+
+.cinema-ui:hover {
+  opacity: 1 !important;
+  transform: translateX(-50%) translateY(0) !important;
+}
+
+.ui-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.act-info {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.act-badge {
+  background: rgba(0, 245, 212, 0.16);
+  color: var(--neon-cyan);
+  border: 1px solid rgba(0, 245, 212, 0.45);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.act-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 0.03em;
+}
+
+.act-shortcuts {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.act-pill {
+  background: rgba(23, 28, 56, 0.8);
+  color: var(--text-muted);
+  border: 1px solid rgba(126, 146, 184, 0.25);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.act-pill:hover {
+  color: var(--text-main);
+  border-color: var(--neon-cyan);
+}
+
+.act-pill.active {
+  background: rgba(247, 37, 133, 0.22);
+  color: #ff99c8;
+  border-color: var(--neon-pink);
+}
+
+.meta-readouts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.zoom-readout {
+  color: var(--star-gold);
+  font-weight: 700;
+}
+
+.ui-bottom-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ctrl-btn {
+  background: rgba(25, 33, 66, 0.9);
+  color: var(--neon-cyan);
+  border: 1px solid rgba(0, 245, 212, 0.35);
+  border-radius: 4px;
+  width: 28px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.ctrl-btn:hover {
+  background: rgba(0, 245, 212, 0.2);
+}
+
+.ctrl-btn:active {
+  transform: scale(0.95);
+}
+
+.timeline-track-container {
+  position: relative;
+  flex: 1;
+  height: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.timeline-track-bg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.timeline-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--star-gold));
+}
+
+.timeline-scrubber {
+  position: relative;
+  width: 100%;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.timeline-scrubber::-webkit-slider-thumb {
+  appearance: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  background: var(--star-gold);
+  border: 1px solid #ffffff;
+  box-shadow: 0 0 8px var(--star-gold);
+}
+
+.audio-btn.audio-on {
+  background: rgba(0, 245, 212, 0.22);
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 10px rgba(0, 245, 212, 0.35);
+}
+
+.audio-unlock-banner {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(11, 16, 36, 0.88);
+  color: var(--neon-cyan);
+  border: 1px solid var(--neon-cyan);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.65), 0 0 12px rgba(0, 245, 212, 0.28);
+  transition: opacity 0.3s ease, transform 0.2s ease, background 0.2s ease;
+  z-index: 15;
+}
+
+.audio-unlock-banner:hover {
+  background: rgba(0, 245, 212, 0.2);
+  transform: translateY(-1px);
+}
+
+.audio-unlock-banner.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+}
+
+@media (max-width: 680px) {
+  .act-shortcuts {
+    display: none;
+  }
+  .viewport-wrapper {
+    padding: 10px 10px 78px;
+  }
+}

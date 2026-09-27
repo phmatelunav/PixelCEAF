@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Biotecnología y Biología Molecular Vegetal · Cortometraje Pixel-Art</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main id="viewport-wrapper" class="viewport-wrapper">
+    <!-- Marco del Lienzo Pixel-Art (Resolución nativa 320x180 escalada sin difuminado) -->
+    <div class="stage-frame">
+      <canvas id="stage" width="320" height="180" aria-label="Animación pixel-art de una investigadora en un laboratorio de biología molecular de plantas observando raíces, micorrizas, bacterias y estomas por el microscopio"></canvas>
+      <div class="crt-overlay" aria-hidden="true"></div>
+
+      <!-- Aviso flotante para desbloquear el sintetizador Web Audio API con 1 clic -->
+      <button id="audio-unlock-banner" type="button" class="audio-unlock-banner" title="Activar sintetizador Web Audio API">
+        🔊 Activar Música y Sonido Sincronizado
+      </button>
+    </div>
+
+    <!-- Controles discretos de sala de proyección (se atenúan automáticamente) -->
+    <section id="cinema-ui" class="cinema-ui" aria-label="Controles de reproducción">
+      <div class="ui-top-row">
+        <div class="act-info">
+          <span id="act-badge" class="act-badge">LABORATORIO</span>
+          <span id="act-title" class="act-title">Biología Molecular de Plantas y Bioinformática</span>
+        </div>
+
+        <div class="act-shortcuts" role="group" aria-label="Saltar a escena">
+          <button type="button" class="act-pill active" data-jump-time="0" data-end-time="5.6" title="Laboratorio de Biotecnología y Bioinformática">1 · Lab</button>
+          <button type="button" class="act-pill" data-jump-time="5.7" data-end-time="8.5" title="Inmersión en Microscopio Confocal">2 · Lente</button>
+          <button type="button" class="act-pill" data-jump-time="9.0" data-end-time="14.2" title="Raíces de Plantas, Pelos Radiculares y Xilema">3 · Raíces</button>
+          <button type="button" class="act-pill" data-jump-time="15.0" data-end-time="21.0" title="Hongos Micorrícicos (Arbúsculos) y Bacterias">4 · Micorrizas</button>
+          <button type="button" class="act-pill" data-jump-time="21.8" data-end-time="27.4" title="Estomas de Hojas, Cloroplastos e Intercambio Gaseoso">5 · Estomas</button>
+          <button type="button" class="act-pill" data-jump-time="28.5" data-end-time="33.8" title="Trabajo Biotecnológico: Micropipeteo, PCR y Electroforesis">6 · Pipeteo/PCR</button>
+          <button type="button" class="act-pill" data-jump-time="34.4" data-end-time="40.4" title="Invernadero Experimental y Riego en Muestras de Campo">7 · Riego/Campo</button>
+          <button type="button" class="act-pill" data-jump-time="41.0" data-end-time="46.8" title="Estación de Bioinformática y Genómica Computacional">8 · Bioinformática</button>
+          <button type="button" class="act-pill" data-jump-time="47.8" data-end-time="52.0" title="El Descubrimiento de la Investigadora">9 · Asombro</button>
+        </div>
+
+        <div class="meta-readouts">
+          <span id="zoom-readout" class="zoom-readout">1.0x · Cultivo In Vitro</span>
+          <span id="time-readout">00:00.0 / 00:52.0</span>
+        </div>
+      </div>
+
+      <div class="ui-bottom-row">
+        <button id="btn-play" type="button" class="ctrl-btn" title="Pausar / Reproducir (Espacio)" aria-label="Pausar animación">
+          <span id="icon-play">❚❚</span>
+        </button>
+
+        <button id="btn-audio" type="button" class="ctrl-btn audio-btn" title="Activar / Silenciar Audio Sincronizado (M)" aria-label="Activar o silenciar sonido">
+          <span id="icon-audio">🔇</span>
+        </button>
+
+        <div class="timeline-track-container">
+          <div class="timeline-track-bg">
+            <div id="timeline-fill" class="timeline-fill"></div>
+          </div>
+          <input
+            id="timeline-scrubber"
+            class="timeline-scrubber"
+            type="range"
+            min="0"
+            max="52"
+            step="0.05"
+            value="0"
+            aria-label="Línea de tiempo del cortometraje"
+          />
+        </div>
+
+        <button id="btn-fullscreen" type="button" class="ctrl-btn" title="Pantalla completa (F)" aria-label="Pantalla completa">
+          ⛶
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Módulos del motor Pixel-Art y Sintetizador Web Audio API -->
+  <script src="js/palette.js"></script>
+  <script src="js/sprites.js"></script>
+  <script src="js/labScene.js"></script>
+  <script src="js/microWorldScene.js"></script>
+  <script src="js/biotechFieldScenes.js"></script>
+  <script src="js/transition.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
