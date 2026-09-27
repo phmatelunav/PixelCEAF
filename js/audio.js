@@ -640,7 +640,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     // ------------------------------------------------------------------
     // CAPÍTULO 9: RETORNO Y ASOMBRO DE LA INVESTIGADORA (46.8s .. 52.0s)
     // ------------------------------------------------------------------
-    if (time >= 46.8) {
+    if (time >= 46.8 && time < 52.0) {
       if (step === 234) {
         playSweepFX({
           startFreq: 1150,
@@ -670,6 +670,60 @@ window.MicroCosmos = window.MicroCosmos || {};
           sendDelay: false
         });
       }
+      return;
+    }
+
+    // ------------------------------------------------------------------
+    // CAPÍTULO 10: CIERRE INSTITUCIONAL CEAF + GORE, CORE, ANID (52.0s .. 58.0s)
+    // ------------------------------------------------------------------
+    if (time >= 52.0) {
+      // En 52.2s (step 261): Acorde cristalino cuando aparece el logo principal de CEAF y su hoja/fruto
+      if (step === 261) {
+        [60, 64, 67, 71, 74, 79].forEach((m, i) => {
+          setTimeout(() => {
+            playFMChime({
+              midi: m,
+              duration: 0.75,
+              modRatio: 2.0,
+              modIndex: 95,
+              volume: 0.085
+            });
+          }, i * 55);
+        });
+      }
+
+      // En 53.4s, 53.8s, 54.2s (steps 267, 269, 271): Destellos suaves cuando emergen GORE, CORE y ANID
+      if (step === 267 || step === 269 || step === 271) {
+        const logoChime = step === 267 ? 76 : step === 269 ? 79 : 84;
+        playFMChime({
+          midi: logoChime,
+          duration: 0.45,
+          modRatio: 2.0,
+          modIndex: 80,
+          volume: 0.075
+        });
+      }
+
+      const logoArp = [60, 67, 71, 74, 76, 79, 84, 79];
+      if (step % 2 === 0) {
+        playNote({
+          midi: logoArp[(step >> 1) % logoArp.length],
+          duration: 0.28,
+          type: 'sine',
+          volume: 0.09,
+          filterFreq: 2000
+        });
+      }
+
+      if (step % 8 === 0) {
+        playNote({
+          midi: 48, // C3
+          duration: 0.9,
+          type: 'sine',
+          volume: 0.14,
+          sendDelay: false
+        });
+      }
     }
   }
 
@@ -695,11 +749,17 @@ window.MicroCosmos = window.MicroCosmos || {};
       let rootMidi = 48; // C3
       let fifthMidi = 55; // G3
 
-      if (time < 5.6 || time >= 46.8) {
+      if (time < 5.6 || (time >= 46.8 && time < 52.0)) {
         targetFilter = 320;
         targetGain = 0.025;
         rootMidi = 48;
         fifthMidi = 55;
+      } else if (time >= 52.0) {
+        // Cierre Institucional: Pad cálido y luminoso en Do Mayor 9
+        targetFilter = 480;
+        targetGain = 0.032;
+        rootMidi = 48; // C3
+        fifthMidi = 55; // G3
       } else if (time >= 5.6 && time < 8.5) {
         const z = MathUtil.invLerp(5.6, 8.5, time);
         targetFilter = 320 + z * 950;

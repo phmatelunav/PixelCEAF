@@ -74,6 +74,13 @@ window.MicroCosmos = window.MicroCosmos || {};
       badge: 'DESCUBRIMIENTO',
       title: 'El Asombro de la Investigadora',
       zoomLabel: '1.0x · Hallazgo Integral'
+    },
+    {
+      start: 52.0,
+      end: 58.0,
+      badge: 'CIERRE INSTITUCIONAL',
+      title: 'CEAF · GORE · CORE · ANID — Región de O\'Higgins',
+      zoomLabel: 'CEAF · Fruticultura Avanzada'
     }
   ];
 

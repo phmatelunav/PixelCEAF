@@ -115,9 +115,10 @@ window.MicroCosmos = window.MicroCosmos || {};
 
   function renderFrame(ctx, time) {
     const BiotechFieldScenes = ns.BiotechFieldScenes;
+    const LogoScene = ns.LogoScene;
 
-    // 1. Fase inicial en el Laboratorio de Biotecnología (0..5.7s) y desenlace de asombro (47.8..52.0s)
-    if (time < 5.7 || time >= 47.8) {
+    // 1. Fase inicial en el Laboratorio de Biotecnología (0..5.7s) y desenlace de asombro (47.8..51.6s)
+    if (time < 5.7 || (time >= 47.8 && time < 51.6)) {
       LabScene.render(ctx, time);
       return;
     }
@@ -192,7 +193,50 @@ window.MicroCosmos = window.MicroCosmos || {};
           }
         }
       }
+      return;
     }
+
+    // 7. Transición Bayer-dither desde el Laboratorio hacia el Cierre Institucional de Logos (51.6s .. 52.4s)
+    if (time >= 51.6 && time < 52.4 && LogoScene) {
+      LogoScene.render(ctx, time);
+      mctx.clearRect(0, 0, WIDTH, HEIGHT);
+      LabScene.render(mctx, time);
+
+      const p = MathUtil.easeInOutCubic(MathUtil.invLerp(51.6, 52.4, time));
+      for (let y = 0; y < HEIGHT; y++) {
+        for (let x = 0; x < WIDTH; x++) {
+          if (1.0 - p > MathUtil.bayer(x, y)) {
+            ctx.drawImage(microCanvas, x, y, 1, 1, x, y, 1, 1);
+          }
+        }
+      }
+      return;
+    }
+
+    // 8. Escena 10: Cierre Institucional Pixel-Art (CEAF arriba + GORE, CORE y ANID abajo) (52.4s .. 57.3s)
+    if (time >= 52.4 && time < 57.3 && LogoScene) {
+      LogoScene.render(ctx, time);
+      return;
+    }
+
+    // 9. Transición de cierre en bucle hacia la Escena 1 (57.3s .. 58.0s)
+    if (time >= 57.3 && LogoScene) {
+      LabScene.render(ctx, 0.0);
+      mctx.clearRect(0, 0, WIDTH, HEIGHT);
+      LogoScene.render(mctx, time);
+
+      const p = MathUtil.easeInOutCubic(MathUtil.invLerp(57.3, 58.0, time));
+      for (let y = 0; y < HEIGHT; y++) {
+        for (let x = 0; x < WIDTH; x++) {
+          if (1.0 - p > MathUtil.bayer(x, y)) {
+            ctx.drawImage(microCanvas, x, y, 1, 1, x, y, 1, 1);
+          }
+        }
+      }
+      return;
+    }
+
+    LabScene.render(ctx, time);
   }
 
   ns.Transition = {

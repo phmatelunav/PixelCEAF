@@ -12,7 +12,7 @@ window.MicroCosmos = window.MicroCosmos || {};
 
   ns.WIDTH = 320;
   ns.HEIGHT = 180;
-  ns.LOOP_DURATION = 52.0;
+  ns.LOOP_DURATION = 58.0;
 
   const PAL = {
     // Tonos base y Laboratorio Clínico Blanco
@@ -166,7 +166,31 @@ window.MicroCosmos = window.MicroCosmos || {};
     waterDropMid: '#48cae4',
     waterDropDeep: '#0077b6',
     greenhouseFrame: '#94a3b8',
-    greenhouseGlass: '#dcfce7'
+    greenhouseGlass: '#dcfce7',
+
+    // Logos Institucionales (CEAF, GORE, CORE, ANID)
+    ceafGray: '#55565a',
+    ceafGrayLight: '#7a7b80',
+    ceafGreen: '#1e8238',
+    ceafGreenLight: '#2ea84e',
+    ceafFruit: '#d45132',
+    ceafFruitLight: '#f07154',
+    anidBlue: '#0f69b4',
+    anidRed: '#e63946',
+    coreBronze: '#945f36',
+    coreBronzeLight: '#b57848',
+    coreStatueDark: '#373d38',
+    coreStatueMid: '#5d665e',
+    coreStatueLight: '#8a948b',
+    goreNavy: '#293d6b',
+    goreOchre: '#9e6b3b',
+    goreSky: '#7ec8e3',
+    goreWaveDark: '#2b579a',
+    goreWaveMid: '#0077c8',
+    goreWaveLight: '#29abe2',
+    goreMountain: '#594a42',
+    goreRiver: '#f17343',
+    goreApple: '#ef3340'
   };
 
   const BAYER_4X4 = [
