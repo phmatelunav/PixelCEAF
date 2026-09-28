@@ -367,47 +367,57 @@ window.MicroCosmos = window.MicroCosmos || {};
             impactBounce = { x: imp.x, p: sinceImp / 0.24, idx: i };
           }
 
-          // Germinación de un pequeño brote verde sobre la línea divisoria tras cada bote
+          // Germinación de un brote frutal detallado sobre la línea divisoria tras cada bote
           if (sinceImp >= 0.08 && i < 4) {
             const sproutP = MathUtil.easeOutCubic(MathUtil.clamp((sinceImp - 0.08) / 0.45, 0, 1));
             const sh = Math.max(1, Math.round(imp.maxH * sproutP));
             const sx = imp.x;
             const syTop = 95 - sh;
 
-            // Tallo verde del brote
+            // Tallo verde sombreado en 2 tonos
             PixelGFX.line(ctx, sx, 95, sx, syTop, PAL.ceafGreen);
-
-            // Par de hojitas cotiledonares en pixel-art
-            if (sproutP > 0.35) {
-              PixelGFX.pset(ctx, sx - 1, syTop + 2, PAL.ceafGreen);
-              PixelGFX.pset(ctx, sx - 2, syTop + 1, PAL.ceafGreenLight);
-              PixelGFX.pset(ctx, sx - 3, syTop + 1, PAL.ceafGreenLight);
-
-              PixelGFX.pset(ctx, sx + 1, syTop + 1, PAL.ceafGreen);
-              PixelGFX.pset(ctx, sx + 2, syTop, PAL.ceafGreenLight);
-              PixelGFX.pset(ctx, sx + 3, syTop, PAL.ceafGreenLight);
+            if (sh >= 3) {
+              PixelGFX.line(ctx, sx - 1, 95, sx - 1, syTop + 2, PAL.ceafGreenLight);
             }
 
-            // Yema floral / micro-fruto en el ápice de los brotes principales
+            // Par de hojas lanceoladas con borde superior iluminado
+            if (sproutP > 0.35) {
+              // Hoja izquierda
+              PixelGFX.line(ctx, sx - 1, syTop + 2, sx - 4, syTop + 1, PAL.ceafGreen);
+              PixelGFX.line(ctx, sx - 2, syTop + 1, sx - 4, syTop, PAL.ceafGreenLight);
+              // Hoja derecha
+              PixelGFX.line(ctx, sx + 1, syTop + 1, sx + 4, syTop, PAL.ceafGreen);
+              PixelGFX.line(ctx, sx + 2, syTop, sx + 4, syTop - 1, PAL.ceafGreenLight);
+            }
+
+            // Yema / fruto miniatura con brillo especular blanco en el ápice
             if (imp.hasBud && sproutP > 0.72) {
-              PixelGFX.pset(ctx, sx, syTop - 1, i === 0 ? PAL.ceafFruit : PAL.sakuraPink);
-              PixelGFX.pset(ctx, sx, syTop - 2, PAL.ceafFruitLight);
+              const budCol = i === 0 ? PAL.ceafFruit : PAL.sakuraMid;
+              const budLight = i === 0 ? PAL.ceafFruitLight : PAL.white;
+              PixelGFX.rect(ctx, sx - 1, syTop - 2, 3, 2, budCol);
+              PixelGFX.pset(ctx, sx, syTop - 3, budCol);
+              PixelGFX.pset(ctx, sx - 1, syTop - 2, budLight);
             }
           }
         }
 
-        // Sombra dinámica proyectada sobre la línea divisoria (y = 95)
+        // Sombra elíptica de contacto de 2 capas (se encoge en el aire y se ensancha al impactar)
         if (fruitX - rx < WIDTH - 6) {
           const heightAboveGround = Math.max(0, groundY - fruitY);
-          const shadowHalfW = Math.max(2, Math.round(7 - heightAboveGround * 0.12));
-          PixelGFX.line(
-            ctx,
-            Math.max(22, fruitX - shadowHalfW),
-            95,
-            Math.min(WIDTH - 8, fruitX + shadowHalfW),
-            95,
-            '#8fa3b8'
-          );
+          const shadowHalfW = Math.max(2, Math.round(8.5 - heightAboveGround * 0.22));
+          const coreHalfW = Math.max(1, Math.round(shadowHalfW * 0.55));
+          const sLeft = Math.max(22, fruitX - shadowHalfW);
+          const sRight = Math.min(WIDTH - 8, fruitX + shadowHalfW);
+          const cLeft = Math.max(22, fruitX - coreHalfW);
+          const cRight = Math.min(WIDTH - 8, fruitX + coreHalfW);
+
+          // Halo exterior suave sobre la línea divisoria
+          PixelGFX.line(ctx, sLeft, 95, sRight, 95, '#94a3b8');
+          if (heightAboveGround < 14) {
+            PixelGFX.line(ctx, sLeft + 1, 96, sRight - 1, 96, '#cbd5e1');
+            // Núcleo oscuro de contacto directo cuando está cerca del suelo
+            PixelGFX.line(ctx, cLeft, 95, cRight, 95, '#475569');
+          }
         }
 
         // Dibujar pequeñas chispas pixel-art al rebotar en la línea
@@ -423,17 +433,27 @@ window.MicroCosmos = window.MicroCosmos || {};
         }
       }
 
-      // Dibujar la esfera naranja (dentro del marco visible del lienzo)
+      // Dibujar la esfera naranja con sombreado volumétrico de 3 tonos y brillo especular rodante
       if (fruitX - rx < WIDTH - 5) {
         ctx.save();
         ctx.beginPath();
         ctx.rect(6, 6, WIDTH - 12, HEIGHT - 12);
         ctx.clip();
 
-        if (rx === ry) {
-          PixelGFX.circleFill(ctx, fruitX, fruitY, fruitR, PAL.ceafFruit);
-        } else {
-          PixelGFX.ellipseFill(ctx, fruitX, fruitY, rx, ry, PAL.ceafFruit);
+        for (let dy = -ry; dy <= ry; dy++) {
+          for (let dx = -rx; dx <= rx; dx++) {
+            const normDist = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry);
+            if (normDist <= 1.0) {
+              let pCol = PAL.ceafFruit;
+              // Sombra creciente inferior-derecha y Sel-Out en el borde inferior
+              if (normDist > 0.78 && dy > 1) {
+                pCol = '#8c2d19';
+              } else if (dx + dy > rx * 0.45) {
+                pCol = '#b53d22';
+              }
+              PixelGFX.pset(ctx, fruitX + dx, fruitY + dy, pCol);
+            }
+          }
         }
 
         // Brillo especular que rota suavemente mientras la esfera avanza y rebota
@@ -442,6 +462,7 @@ window.MicroCosmos = window.MicroCosmos || {};
           const hy = fruitY + Math.round(Math.sin(rotAngle - 2.35) * 2.4);
           PixelGFX.circleFill(ctx, hx, hy, 2, PAL.ceafFruitLight);
           PixelGFX.pset(ctx, hx - 1, hy - 1, PAL.white);
+          PixelGFX.pset(ctx, hx, hy - 1, PAL.white);
         }
         ctx.restore();
       }

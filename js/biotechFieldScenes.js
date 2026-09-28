@@ -243,7 +243,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
     PixelGFX.line(ctx, 0, 74, WIDTH - 1, 74, PAL.labWallLine);
 
-    // Ventana lateral izquierda mostrando Cordillera de los Andes y cerezos Sakura con volumen
+    // Ventana lateral izquierda mostrando Cordillera de los Andes, nube, cerezos y pétalos al viento
     const winX = 12;
     const winY = 30;
     const winW = 74;
@@ -256,6 +256,10 @@ window.MicroCosmos = window.MicroCosmos || {};
     ctx.clip();
     PixelGFX.rect(ctx, winX, winY, winW, 24, PAL.skyTop);
     PixelGFX.rect(ctx, winX, winY + 24, winW, 14, PAL.skyMid);
+    // Nube suave desplazándose lentamente por el cielo exterior
+    const cloudX = winX + 12 + Math.round((globalTime * 1.4) % 52);
+    PixelGFX.ellipseFill(ctx, cloudX, winY + 11, 11, 4, PAL.white);
+    PixelGFX.ellipseFill(ctx, cloudX + 7, winY + 12, 8, 3, PAL.skyHorizon);
     // Cordillera nevada al fondo
     for (let x = 0; x < winW; x++) {
       const mY = winY + 25 + Math.round(Math.sin(x * 0.11) * 5 + Math.cos(x * 0.23) * 3);
@@ -273,6 +277,13 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.rect(ctx, winX + 52, winY + 32, 4, 15, PAL.trunkDark);
     PixelGFX.line(ctx, winX + 53, winY + 32, winX + 53, winY + 46, PAL.trunkHighlight);
     PixelGFX.foliageCluster(ctx, winX + 54, winY + 28, 15, 10, sakuraPalette, 67);
+    // Pétalos de cerezo flotando en diagonal con la brisa tras el cristal
+    for (let p = 0; p < 6; p++) {
+      const pProg = (globalTime * 0.42 + p * 0.19) % 1.0;
+      const px = winX + Math.round(((p * 17 + pProg * 36) % (winW - 4)));
+      const py = winY + 14 + Math.round(pProg * 38 + Math.sin(globalTime * 3 + p) * 1.5);
+      PixelGFX.pset(ctx, px, py, p % 2 === 0 ? PAL.sakuraWhite : PAL.sakuraLight);
+    }
     ctx.restore();
     PixelGFX.line(ctx, winX + 37, winY, winX + 37, winY + winH - 1, PAL.windowFrameWhite);
     PixelGFX.rectOutline(ctx, winX, winY, winW, winH, PAL.white);
@@ -292,7 +303,7 @@ window.MicroCosmos = window.MicroCosmos || {};
       }
     }
 
-    // Segunda repisa inferior con Matraces Erlenmeyer cónicos y medio líquido nutritivo
+    // Segunda repisa inferior con Matraces Erlenmeyer cónicos, microburbujas y vapor sutil
     const shelf2Y = 88;
     PixelGFX.rect(ctx, shelfX, shelf2Y, 74, 3, PAL.windowFrameDark);
     PixelGFX.line(ctx, shelfX, shelf2Y, shelfX + 73, shelf2Y, PAL.white);
@@ -315,6 +326,13 @@ window.MicroCosmos = window.MicroCosmos || {};
           PixelGFX.line(ctx, ex - hw + 1, ry, ex + hw - 1, ry, PAL.white);
         }
         PixelGFX.pset(ctx, ex - hw + 1, ry, PAL.white);
+      }
+      // Micro-burbuja ascendente dentro del medio líquido y condensación sutil
+      const bubPhase = (globalTime * 1.8 + i * 0.37) % 1.0;
+      const bubY = ey - 2 - Math.floor(bubPhase * 4);
+      PixelGFX.pset(ctx, ex + (i % 2 === 0 ? 1 : -1), bubY, PAL.white);
+      if (bubPhase > 0.65) {
+        PixelGFX.pset(ctx, ex, ey - 19 - Math.round((bubPhase - 0.65) * 6), PAL.windowFrameWhite);
       }
     }
 
@@ -471,22 +489,28 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, headBaseX - 5, headBaseY + 16, headBaseX - 2, headBaseY + 16, PAL.lips);
     PixelGFX.pset(ctx, headBaseX - 1, headBaseY + 15, PAL.lips);
 
-    // Ojos mirando hacia abajo (hacia la micropipeta y los pocillos) + Gafas finas 1px
+    // Ojos mirando hacia abajo (con parpadeo natural periódico) + Gafas finas 1px con destello
     const lx = headBaseX - 8;
     const ly = headBaseY + 7;
     const rx = headBaseX;
     const ry = headBaseY + 7;
-    PixelGFX.rect(ctx, lx, ly, 4, 4, PAL.white);
-    PixelGFX.rect(ctx, rx, ry, 6, 4, PAL.white);
-    PixelGFX.rect(ctx, lx, ly + 2, 2, 2, '#1ca3b8');
-    PixelGFX.pset(ctx, lx, ly + 2, PAL.hairDark);
-    PixelGFX.rect(ctx, rx, ry + 2, 3, 2, '#1ca3b8');
-    PixelGFX.rect(ctx, rx, ry + 2, 2, 2, PAL.hairDark);
-    PixelGFX.pset(ctx, lx + 1, ly + 1, PAL.white);
-    PixelGFX.pset(ctx, rx + 2, ry + 1, PAL.white);
-    PixelGFX.line(ctx, lx, ly - 1, lx + 3, ly - 1, PAL.hairDark);
-    PixelGFX.line(ctx, rx, ry - 1, rx + 5, ry - 1, PAL.hairDark);
-    // Montura fina de 1px
+    const isBlink6 = ((localTime + 1.1) % 3.4) > 3.24;
+    if (isBlink6) {
+      PixelGFX.line(ctx, lx, ly + 2, lx + 3, ly + 2, PAL.hairDark);
+      PixelGFX.line(ctx, rx, ry + 2, rx + 5, ry + 2, PAL.hairDark);
+    } else {
+      PixelGFX.rect(ctx, lx, ly, 4, 4, PAL.white);
+      PixelGFX.rect(ctx, rx, ry, 6, 4, PAL.white);
+      PixelGFX.rect(ctx, lx, ly + 2, 2, 2, '#1ca3b8');
+      PixelGFX.pset(ctx, lx, ly + 2, PAL.hairDark);
+      PixelGFX.rect(ctx, rx, ry + 2, 3, 2, '#1ca3b8');
+      PixelGFX.rect(ctx, rx, ry + 2, 2, 2, PAL.hairDark);
+      PixelGFX.pset(ctx, lx + 1, ly + 1, PAL.white);
+      PixelGFX.pset(ctx, rx + 2, ry + 1, PAL.white);
+      PixelGFX.line(ctx, lx, ly - 1, lx + 3, ly - 1, PAL.hairDark);
+      PixelGFX.line(ctx, rx, ry - 1, rx + 5, ry - 1, PAL.hairDark);
+    }
+    // Montura fina de 1px + destello deslizante
     PixelGFX.line(ctx, lx, ly - 2, lx + 3, ly - 2, '#8ecae6');
     PixelGFX.line(ctx, lx, ly + 4, lx + 3, ly + 4, '#5fa8d3');
     PixelGFX.line(ctx, lx - 1, ly - 1, lx - 1, ly + 3, '#8ecae6');
@@ -496,6 +520,11 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, rx + 6, ry - 1, rx + 6, ry + 3, '#5fa8d3');
     PixelGFX.line(ctx, lx + 4, ly, rx - 1, ly, '#8ecae6');
     PixelGFX.line(ctx, rx + 7, ry, headBaseX + 12, headBaseY + 9, '#5fa8d3');
+    const glint6 = Math.floor(globalTime * 2.5) % 9;
+    if (glint6 < 4) {
+      PixelGFX.pset(ctx, lx + glint6, ly - 2, PAL.white);
+      PixelGFX.pset(ctx, rx + 1 + glint6, ry - 2, PAL.white);
+    }
     PixelGFX.line(ctx, lx, ly - 4, lx + 3, ly - 4, PAL.hairMid);
     PixelGFX.line(ctx, rx + 1, ry - 4, rx + 5, ry - 4, PAL.hairMid);
 
@@ -528,6 +557,14 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.rect(ctx, rackX, rackY + 5, 32, 7, PAL.metalDark);
     PixelGFX.rect(ctx, rackX + 1, rackY + 6, 30, 5, PAL.metalMid);
     PixelGFX.rect(ctx, rackX + 2, rackY + 11, 28, 2, PAL.neonCyan);
+
+    // Vapor frío / condensación sutil emanando de los costados del bloque térmico refrigerado
+    for (let m = 0; m < 3; m++) {
+      const mPhase = (globalTime * 1.6 + m * 0.33) % 1.0;
+      const mxL = rackX - 2 - Math.round(mPhase * 4);
+      const myL = rackY + 9 + Math.round(mPhase * 3);
+      PixelGFX.pset(ctx, mxL, myL, mPhase < 0.5 ? PAL.neonCyanLight : PAL.windowFrameWhite);
+    }
 
     for (let w = 0; w < 5; w++) {
       const wx = rackX + 4 + w * 5; // Tubos en 156, 161, 166, 171, 176 (centro exacto en wx + 2)
@@ -610,9 +647,14 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.rect(ctx, 0, 48, WIDTH, 42, PAL.skyMid);
     PixelGFX.rect(ctx, 0, 90, WIDTH, 34, PAL.skyHorizon);
 
-    // Sol radiante
+    // Sol radiante y nubes altas desplazándose suavemente con el viento
     PixelGFX.circleFill(ctx, 56, 36, 14, PAL.sunbeamCore);
     PixelGFX.ditherGlow(ctx, 56, 36, 12, 34, PAL.sunbeamWarm, 0.7);
+    const ghCloud1X = 128 + Math.round(localTime * 2.4);
+    const ghCloud2X = 236 + Math.round(localTime * 1.8);
+    PixelGFX.ellipseFill(ctx, ghCloud1X, 32, 16, 5, PAL.white);
+    PixelGFX.ellipseFill(ctx, ghCloud1X + 10, 34, 12, 4, PAL.skyHorizon);
+    PixelGFX.ellipseFill(ctx, ghCloud2X, 27, 14, 4, PAL.white);
 
     // Cordillera de los Andes en el horizonte exterior (y = 66 .. 104)
     for (let x = 0; x < WIDTH; x++) {
@@ -633,6 +675,13 @@ window.MicroCosmos = window.MicroCosmos || {};
       PixelGFX.rect(ctx, cx - 1, cy + 4, 3, 11, PAL.trunkDark);
       PixelGFX.line(ctx, cx, cy + 4, cx, cy + 14, PAL.trunkHighlight);
       PixelGFX.foliageCluster(ctx, cx, cy, 14, 9, sakuraPalette, 19 + c * 23);
+    }
+    // Pétalos de cerezo flotando en el exterior tras el cristal del invernadero
+    for (let p = 0; p < 9; p++) {
+      const pProg = (globalTime * 0.35 + p * 0.13) % 1.0;
+      const px = Math.round((p * 37 + pProg * 54) % (WIDTH - 20));
+      const py = 54 + Math.round(pProg * 46 + Math.sin(globalTime * 2.6 + p) * 2);
+      PixelGFX.pset(ctx, px, py, p % 2 === 0 ? PAL.sakuraWhite : PAL.sakuraLight);
     }
 
     // 2. Estructura Metálica Acristalada del Invernadero Experimental
@@ -902,21 +951,27 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, headBaseX - 5, headBaseY + 16, headBaseX - 1, headBaseY + 16, PAL.lips);
     PixelGFX.pset(ctx, headBaseX, headBaseY + 15, PAL.lips);
 
-    // Ojos expresivos y gafas finas 1px
+    // Ojos expresivos (con parpadeo natural) y gafas finas 1px con destello
     const lx = headBaseX - 8;
     const ly = headBaseY + 7;
     const rx = headBaseX;
     const ry = headBaseY + 7;
-    PixelGFX.rect(ctx, lx, ly, 4, 4, PAL.white);
-    PixelGFX.rect(ctx, rx, ry, 6, 4, PAL.white);
-    PixelGFX.rect(ctx, lx, ly + 1, 2, 3, '#1ca3b8');
-    PixelGFX.pset(ctx, lx, ly + 2, PAL.hairDark);
-    PixelGFX.rect(ctx, rx, ry + 1, 3, 3, '#1ca3b8');
-    PixelGFX.rect(ctx, rx, ry + 1, 2, 2, PAL.hairDark);
-    PixelGFX.pset(ctx, lx + 1, ly + 1, PAL.white);
-    PixelGFX.pset(ctx, rx + 2, ry + 1, PAL.white);
-    PixelGFX.line(ctx, lx, ly - 1, lx + 3, ly - 1, PAL.hairDark);
-    PixelGFX.line(ctx, rx, ry - 1, rx + 5, ry - 1, PAL.hairDark);
+    const isBlink7 = ((localTime + 0.8) % 3.5) > 3.34;
+    if (isBlink7) {
+      PixelGFX.line(ctx, lx, ly + 2, lx + 3, ly + 2, PAL.hairDark);
+      PixelGFX.line(ctx, rx, ry + 2, rx + 5, ry + 2, PAL.hairDark);
+    } else {
+      PixelGFX.rect(ctx, lx, ly, 4, 4, PAL.white);
+      PixelGFX.rect(ctx, rx, ry, 6, 4, PAL.white);
+      PixelGFX.rect(ctx, lx, ly + 1, 2, 3, '#1ca3b8');
+      PixelGFX.pset(ctx, lx, ly + 2, PAL.hairDark);
+      PixelGFX.rect(ctx, rx, ry + 1, 3, 3, '#1ca3b8');
+      PixelGFX.rect(ctx, rx, ry + 1, 2, 2, PAL.hairDark);
+      PixelGFX.pset(ctx, lx + 1, ly + 1, PAL.white);
+      PixelGFX.pset(ctx, rx + 2, ry + 1, PAL.white);
+      PixelGFX.line(ctx, lx, ly - 1, lx + 3, ly - 1, PAL.hairDark);
+      PixelGFX.line(ctx, rx, ry - 1, rx + 5, ry - 1, PAL.hairDark);
+    }
     PixelGFX.line(ctx, lx, ly - 2, lx + 3, ly - 2, '#8ecae6');
     PixelGFX.line(ctx, lx, ly + 4, lx + 3, ly + 4, '#5fa8d3');
     PixelGFX.line(ctx, lx - 1, ly - 1, lx - 1, ly + 3, '#8ecae6');
@@ -926,6 +981,11 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, rx + 6, ry - 1, rx + 6, ry + 3, '#5fa8d3');
     PixelGFX.line(ctx, lx + 4, ly, rx - 1, ly, '#8ecae6');
     PixelGFX.line(ctx, rx + 7, ry, headBaseX + 12, headBaseY + 9, '#5fa8d3');
+    const glint7 = Math.floor(globalTime * 2.5) % 9;
+    if (glint7 < 4) {
+      PixelGFX.pset(ctx, lx + glint7, ly - 2, PAL.white);
+      PixelGFX.pset(ctx, rx + 1 + glint7, ry - 2, PAL.white);
+    }
     PixelGFX.line(ctx, lx, ly - 4, lx + 3, ly - 4, PAL.hairMid);
     PixelGFX.line(ctx, rx + 1, ry - 4, rx + 5, ry - 4, PAL.hairMid);
 
@@ -1245,22 +1305,28 @@ window.MicroCosmos = window.MicroCosmos || {};
       PixelGFX.line(ctx, headBaseX - 5, headBaseY + 16, headBaseX - 2, headBaseY + 16, PAL.lips);
     }
 
-    // Ojos y Gafas finas 1px con reflejo de datos bioinformáticos
+    // Ojos (con parpadeo natural) y Gafas finas 1px con reflejo de datos bioinformáticos
     const lx = headBaseX - 8;
     const ly = headBaseY + 7;
     const rx = headBaseX;
     const ry = headBaseY + 7;
-    PixelGFX.rect(ctx, lx, ly, 4, 4, PAL.white);
-    PixelGFX.rect(ctx, rx, ry, 6, 4, PAL.white);
-    const eyeScan = Math.floor(localTime * 4) % 2;
-    PixelGFX.rect(ctx, lx + eyeScan, ly + 1, 2, 3, '#1ca3b8');
-    PixelGFX.pset(ctx, lx + eyeScan, ly + 2, PAL.hairDark);
-    PixelGFX.rect(ctx, rx + eyeScan, ry + 1, 3, 3, '#1ca3b8');
-    PixelGFX.rect(ctx, rx + eyeScan, ry + 1, 2, 2, PAL.hairDark);
-    PixelGFX.pset(ctx, lx + 1, ly, PAL.chloroplast);
-    PixelGFX.pset(ctx, rx + 3, ry, PAL.neonCyan);
-    PixelGFX.line(ctx, lx, ly - 1, lx + 3, ly - 1, PAL.hairDark);
-    PixelGFX.line(ctx, rx, ry - 1, rx + 5, ry - 1, PAL.hairDark);
+    const isBlink8 = ((localTime + 1.6) % 3.6) > 3.44 && !isPointing;
+    if (isBlink8) {
+      PixelGFX.line(ctx, lx, ly + 2, lx + 3, ly + 2, PAL.hairDark);
+      PixelGFX.line(ctx, rx, ry + 2, rx + 5, ry + 2, PAL.hairDark);
+    } else {
+      PixelGFX.rect(ctx, lx, ly, 4, 4, PAL.white);
+      PixelGFX.rect(ctx, rx, ry, 6, 4, PAL.white);
+      const eyeScan = Math.floor(localTime * 4) % 2;
+      PixelGFX.rect(ctx, lx + eyeScan, ly + 1, 2, 3, '#1ca3b8');
+      PixelGFX.pset(ctx, lx + eyeScan, ly + 2, PAL.hairDark);
+      PixelGFX.rect(ctx, rx + eyeScan, ry + 1, 3, 3, '#1ca3b8');
+      PixelGFX.rect(ctx, rx + eyeScan, ry + 1, 2, 2, PAL.hairDark);
+      PixelGFX.pset(ctx, lx + 1, ly, PAL.chloroplast);
+      PixelGFX.pset(ctx, rx + 3, ry, PAL.neonCyan);
+      PixelGFX.line(ctx, lx, ly - 1, lx + 3, ly - 1, PAL.hairDark);
+      PixelGFX.line(ctx, rx, ry - 1, rx + 5, ry - 1, PAL.hairDark);
+    }
     PixelGFX.line(ctx, lx, ly - 2, lx + 3, ly - 2, '#8ecae6');
     PixelGFX.line(ctx, lx, ly + 4, lx + 3, ly + 4, '#5fa8d3');
     PixelGFX.line(ctx, lx - 1, ly - 1, lx - 1, ly + 3, '#8ecae6');
@@ -1270,6 +1336,11 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, rx + 6, ry - 1, rx + 6, ry + 3, '#5fa8d3');
     PixelGFX.line(ctx, lx + 4, ly, rx - 1, ly, '#8ecae6');
     PixelGFX.line(ctx, rx + 7, ry, headBaseX + 12, headBaseY + 9, '#5fa8d3');
+    const glint8 = Math.floor(globalTime * 2.5) % 9;
+    if (glint8 < 4) {
+      PixelGFX.pset(ctx, lx + glint8, ly - 2, PAL.white);
+      PixelGFX.pset(ctx, rx + 1 + glint8, ry - 2, PAL.white);
+    }
     const browOffset = isPointing ? -1 : 0;
     PixelGFX.line(ctx, lx, ly - 4 + browOffset, lx + 3, ly - 4 + browOffset, PAL.hairMid);
     PixelGFX.line(ctx, rx + 1, ry - 4 + browOffset, rx + 5, ry - 4 + browOffset, PAL.hairMid);

@@ -82,6 +82,75 @@ window.MicroCosmos = window.MicroCosmos || {};
         }
 
         PixelGFX.circleOutline(ctx, cx, cy, 154, PAL.neonCyanDark);
+
+        // Telemetría Confocal Superior (Canal Láser + Profundidad Z-Stack + Barra de Escala Micrométrica)
+        if (hudAlpha > 0.45 && PixelGFX.drawText3x5) {
+          let laserLabel = '488NM · GFP';
+          let scaleLabel = '200 UM';
+          let scaleBarW = 36;
+          let laserCol = PAL.chloroplast;
+
+          if (time >= 8.5 && time < 14.2) {
+            laserLabel = '488NM · XILEMA';
+            scaleLabel = '100 UM';
+            scaleBarW = 32;
+            laserCol = PAL.neonCyan;
+          } else if (time >= 14.2 && time < 21.0) {
+            laserLabel = '561NM · PGPR';
+            scaleLabel = '25 UM';
+            scaleBarW = 28;
+            laserCol = PAL.starGold;
+          } else if (time >= 21.0) {
+            laserLabel = '640NM · CHL-A';
+            scaleLabel = '10 UM';
+            scaleBarW = 24;
+            laserCol = PAL.chloroplast;
+          }
+
+          // 1. Esquina Superior Izquierda: Canal de Excitación Láser y Plano Focal Z
+          const tlX = 6;
+          const tlY = 6;
+          const tlW = 68;
+          const tlH = 17;
+          PixelGFX.rect(ctx, tlX, tlY, tlW, tlH, '#070e1e');
+          PixelGFX.line(ctx, tlX, tlY, tlX + tlW - 1, tlY, '#1e3a5f');
+          PixelGFX.line(ctx, tlX, tlY + tlH - 1, tlX + tlW - 1, tlY + tlH - 1, '#1e3a5f');
+          PixelGFX.rect(ctx, tlX, tlY, 2, tlH, laserCol);
+
+          // Indicador LED láser pulsante + longitud de onda
+          const ledOn = (Math.floor(time * 6) % 2 === 0);
+          PixelGFX.rect(ctx, tlX + 4, tlY + 3, 2, 3, ledOn ? laserCol : PAL.screenGrid);
+          PixelGFX.drawText3x5(ctx, laserLabel, tlX + 9, tlY + 2, PAL.white, 4);
+
+          // Lectura dinámica de profundidad Z-Stack en micrómetros
+          const zDepth = Math.round(45 + Math.sin(time * 1.4) * 28 + (time - 6) * 4);
+          const zText = `Z:-${String(Math.max(10, zDepth)).padStart(3, '0')}UM`;
+          PixelGFX.drawText3x5(ctx, zText, tlX + 9, tlY + 10, laserCol, 4);
+
+          // 2. Esquina Superior Derecha: Barra de Escala Micrométrica Calibrada
+          const trW = 48;
+          const trH = 17;
+          const trX = WIDTH - trW - 6;
+          const trY = 6;
+          PixelGFX.rect(ctx, trX, trY, trW, trH, '#070e1e');
+          PixelGFX.line(ctx, trX, trY, trX + trW - 1, trY, '#1e3a5f');
+          PixelGFX.line(ctx, trX, trY + trH - 1, trX + trW - 1, trY + trH - 1, '#1e3a5f');
+          PixelGFX.rect(ctx, trX + trW - 2, trY, 2, tlH, laserCol);
+
+          const labelX = trX + Math.round((trW - scaleLabel.length * 4) * 0.5);
+          PixelGFX.drawText3x5(ctx, scaleLabel, labelX, trY + 2, PAL.white, 4);
+
+          // Barra física graduada con extremos y subdivisión central
+          const barX0 = trX + Math.round((trW - scaleBarW) * 0.5);
+          const barX1 = barX0 + scaleBarW;
+          const barMid = Math.round((barX0 + barX1) * 0.5);
+          const barY = trY + 12;
+          PixelGFX.line(ctx, barX0, barY, barMid, barY, PAL.white);
+          PixelGFX.line(ctx, barMid, barY, barX1, barY, laserCol);
+          PixelGFX.line(ctx, barX0, barY - 2, barX0, barY + 2, PAL.white);
+          PixelGFX.line(ctx, barMid, barY - 1, barMid, barY + 1, PAL.white);
+          PixelGFX.line(ctx, barX1, barY - 2, barX1, barY + 2, laserCol);
+        }
       }
     }
   }

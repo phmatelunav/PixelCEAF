@@ -633,8 +633,18 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, lx + 4, ly, rx - 1, ly, frameLight);
     PixelGFX.line(ctx, rx + 7, ry, headBaseX + 12, headBaseY + 9, frameMid);
 
-    PixelGFX.pset(ctx, lx, ly - 1, PAL.white);
-    PixelGFX.pset(ctx, rx + 4, ry - 1, PAL.white);
+    // Destello especular deslizándose suavemente sobre los cristales de las gafas
+    const glintOffset = Math.floor(time * 2.5) % 9;
+    if (glintOffset < 4) {
+      PixelGFX.pset(ctx, lx + glintOffset, ly - 2, PAL.white);
+      PixelGFX.pset(ctx, rx + 1 + glintOffset, ry - 2, PAL.white);
+      if (!blink) {
+        PixelGFX.pset(ctx, rx + glintOffset, ry, '#e0f7fa');
+      }
+    } else {
+      PixelGFX.pset(ctx, lx, ly - 1, PAL.white);
+      PixelGFX.pset(ctx, rx + 4, ry - 1, PAL.white);
+    }
 
     // Cejas finas
     const browRaise = amazed > 0.3 ? -1 : 0;
