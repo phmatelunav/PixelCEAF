@@ -38,40 +38,51 @@ window.MicroCosmos = window.MicroCosmos || {};
   }
 
   /**
-   * Dibuja un bacilo (bacteria en forma de bastón redondeado) con flagelos animados
+   * Dibuja un bacilo PGPR (bacteria en forma de bastón redondeado 3D) con flagelos animados
    */
   function drawBacterium(ctx, cx, cy, angle, bodyCol, coreCol, time, id) {
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
+    const nx = -sin;
+    const ny = cos;
     const halfLen = 4;
 
     // 1. Flagelos bacterianos ondulando detrás del polo posterior
     const tailBaseX = cx - cos * (halfLen + 2);
     const tailBaseY = cy - sin * (halfLen + 2);
-    let px = tailBaseX;
-    let py = tailBaseY;
-    for (let s = 1; s <= 8; s++) {
-      const whip = Math.sin(time * 14 - s * 0.9 + id * 2.1) * 2.2;
-      const nx = Math.round(tailBaseX - cos * s * 1.8 - sin * whip);
-      const ny = Math.round(tailBaseY - sin * s * 1.8 + cos * whip);
-      PixelGFX.line(ctx, px, py, nx, ny, s > 5 ? PAL.hyphaDark : PAL.neonCyanMid);
-      px = nx;
-      py = ny;
+    for (let f = -1; f <= 1; f += 2) {
+      let px = tailBaseX + nx * f;
+      let py = tailBaseY + ny * f;
+      for (let s = 1; s <= 7; s++) {
+        const whip = Math.sin(time * 14 - s * 0.95 + id * 2.1 + f * 0.6) * (1.6 + s * 0.15);
+        const curX = Math.round(tailBaseX - cos * s * 1.7 + nx * (whip + f * 0.8));
+        const curY = Math.round(tailBaseY - sin * s * 1.7 + ny * (whip + f * 0.8));
+        PixelGFX.line(ctx, px, py, curX, curY, s > 4 ? PAL.hyphaDark : PAL.neonCyanMid);
+        px = curX;
+        py = curY;
+      }
     }
 
-    // 2. Cápsula del bacilo (bastón de 8px con extremos redondeados)
+    // 2. Sombra inferior / membrana externa de la cápsula bacteriana
+    for (let step = -halfLen; step <= halfLen; step++) {
+      const bx = Math.round(cx + cos * step + nx * 0.8);
+      const by = Math.round(cy + sin * step + ny * 0.8);
+      PixelGFX.circleFill(ctx, bx, by, 3, '#1a0b2e');
+    }
+    // 3. Cuerpo principal del bacilo
     for (let step = -halfLen; step <= halfLen; step++) {
       const bx = Math.round(cx + cos * step);
       const by = Math.round(cy + sin * step);
       PixelGFX.circleFill(ctx, bx, by, 3, bodyCol);
     }
+    // 4. Cresta cilíndrica iluminada (sombreado 3D superior)
     for (let step = -halfLen + 1; step <= halfLen - 1; step++) {
-      const bx = Math.round(cx + cos * step);
-      const by = Math.round(cy + sin * step);
+      const bx = Math.round(cx + cos * step - nx * 0.9);
+      const by = Math.round(cy + sin * step - ny * 0.9);
       PixelGFX.circleFill(ctx, bx, by, 1, coreCol);
     }
     // Nucleoide / plásmido brillante
-    PixelGFX.pset(ctx, Math.round(cx + cos * 1), Math.round(cy + sin * 1), PAL.white);
+    PixelGFX.pset(ctx, Math.round(cx + cos * 1.2 - nx * 0.5), Math.round(cy + sin * 1.2 - ny * 0.5), PAL.white);
   }
 
   // ============================================================================
@@ -81,8 +92,19 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.rect(ctx, 0, 0, WIDTH, HEIGHT, PAL.soilVoid);
 
     // Halos profundos de la rizosfera en el suelo
-    PixelGFX.ditherGlow(ctx, 160, 85, 18, 95, PAL.soilWarm, 0.85);
-    PixelGFX.ditherGlow(ctx, 160, 90, 12, 68, PAL.rootWallDark, 0.8);
+    PixelGFX.ditherGlow(ctx, 160, 85, 18, 98, PAL.soilWarm, 0.85);
+    PixelGFX.ditherGlow(ctx, 160, 90, 12, 70, PAL.rootWallDark, 0.8);
+
+    // Agregados minerales del suelo en la rizosfera (racimos orgánicos pixel-art)
+    for (let m = 0; m < 18; m++) {
+      const side = (m % 2 === 0) ? -1 : 1;
+      const mx = 160 + side * (48 + ((m * 19) % 92));
+      const my = 12 + ((m * 29) % 156);
+      const mr = 2 + (m % 3);
+      PixelGFX.circleFill(ctx, mx, my, mr, '#141024');
+      PixelGFX.circleFill(ctx, mx - 1, my - 1, Math.max(1, mr - 1), '#231c38');
+      PixelGFX.pset(ctx, mx - 1, my - 1, '#3b3059');
+    }
 
     // 1. Raíces laterales secundarias en segundo plano
     const lateralBranches = [
@@ -103,8 +125,10 @@ window.MicroCosmos = window.MicroCosmos || {};
         const ly = Math.round(baseY + s * Math.sin(br.angle) + curve);
         const radius = Math.max(1, Math.round((1 - frac * 0.75) * 5));
         PixelGFX.circleFill(ctx, lx, ly, radius, PAL.rootWallDark);
-        PixelGFX.circleFill(ctx, lx, ly, Math.max(1, radius - 1), PAL.rootWallMid);
-        // Pulso de savia en la raíz lateral
+        PixelGFX.circleFill(ctx, lx, ly - 1, Math.max(1, radius - 1), PAL.rootWallMid);
+        if (s % 4 === 0 && radius >= 2) {
+          PixelGFX.pset(ctx, lx, ly - 1, PAL.rootWallLight);
+        }
         if (Math.abs(((s - time * 24) % 22)) < 2.2) {
           PixelGFX.pset(ctx, lx, ly, PAL.xylemGold);
         }
@@ -115,7 +139,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     for (let row = 14; row < 142; row += 9) {
       for (let side of [-1, 1]) {
         const taper = row > 115 ? Math.max(0.2, 1 - (row - 115) / 48) : 1.0;
-        const rootHalfW = Math.round(24 * taper);
+        const rootHalfW = Math.round(25 * taper);
         const anchorX = 160 + side * rootHalfW;
         const anchorY = row;
         const hairLen = Math.round((22 + ((row * 7) % 18)) * taper);
@@ -128,21 +152,24 @@ window.MicroCosmos = window.MicroCosmos || {};
           const hx = Math.round(anchorX + side * h + (side * wave * 0.3));
           const hy = Math.round(anchorY + wave + hFrac * 4);
           const col = hFrac > 0.75 ? PAL.neonCyan : PAL.rootWallLight;
+          PixelGFX.line(ctx, prevX, prevY + 1, hx, hy + 1, PAL.rootWallDark);
           PixelGFX.line(ctx, prevX, prevY, hx, hy, col);
           prevX = hx;
           prevY = hy;
         }
-        // Gota de exudado radicular brillante en la punta del pelo radicular
         PixelGFX.pset(ctx, prevX, prevY, PAL.xylemLight);
       }
     }
 
-    // 3. Cuerpo Principal de la Raíz Primaria (Arquitectura Celular y Cilindro Vascular)
+    // 3. Cuerpo Principal de la Raíz Primaria (Células Biseladas Orgánicas y Cilindro Vascular con Espirales de Lignina)
     const rootTopY = 0;
     const rootTipY = 162;
 
+    // Vaina de mucílago translúcido alrededor del ápice radicular (caliptra)
+    PixelGFX.ditherGlow(ctx, 160, 146, 12, 32, PAL.rootWallMid, 0.55);
+
+    // Base oscura del cilindro radicular
     for (let y = rootTopY; y <= rootTipY; y++) {
-      // Forma ahusada hacia el ápice meristemático (cofia)
       let taper = 1.0;
       if (y > 112) {
         const t = (y - 112) / (rootTipY - 112);
@@ -150,67 +177,92 @@ window.MicroCosmos = window.MicroCosmos || {};
       }
       const halfW = Math.round(25 * taper);
       if (halfW <= 0) continue;
-
-      const xLeft = 160 - halfW;
-      const xRight = 160 + halfW;
-
-      // Relleno del córtex radicular
-      PixelGFX.rect(ctx, xLeft, y, halfW * 2 + 1, 1, PAL.rootCellFill);
-
-      // Paredes celulares longitudinales (hileras de células del córtex y epidermis)
-      const colOffsets = [-1.0, -0.68, -0.36, 0.36, 0.68, 1.0];
-      for (let c = 0; c < colOffsets.length; c++) {
-        const cx = 160 + Math.round(colOffsets[c] * halfW);
-        const isOuter = Math.abs(colOffsets[c]) > 0.9;
-        PixelGFX.pset(ctx, cx, y, isOuter ? PAL.epidermisHighlight : PAL.rootWallMid);
-      }
-
-      // Paredes celulares transversales (ladrillos celulares)
-      const cellH = y > 122 ? 6 : 11; // células más pequeñas en el meristemo apical
-      if (y % cellH === 0) {
-        PixelGFX.line(ctx, xLeft + 1, y, xRight - 1, y, PAL.rootWallMid);
-      }
-
-      // Cilindro Vascular Central (Estela: Xilema y Floema)
-      const steleHalfW = Math.max(1, Math.round(6 * taper));
-      if (y < 146) {
-        PixelGFX.rect(ctx, 160 - steleHalfW, y, steleHalfW * 2 + 1, 1, '#143828');
-        PixelGFX.pset(ctx, 160 - steleHalfW, y, PAL.neonEmerald);
-        PixelGFX.pset(ctx, 160 + steleHalfW, y, PAL.neonEmerald);
-        // Vasos del xilema en el centro
-        PixelGFX.pset(ctx, 160 - 2, y, PAL.phloemOrange);
-        PixelGFX.pset(ctx, 160 + 2, y, PAL.phloemOrange);
-        PixelGFX.pset(ctx, 160, y, PAL.xylemGold);
-      }
+      PixelGFX.rect(ctx, 160 - halfW, y, halfW * 2 + 1, 1, PAL.rootCellFill);
+      // Contorno epidérmico exterior brillante con Sel-Out
+      PixelGFX.pset(ctx, 160 - halfW, y, PAL.epidermisHighlight);
+      PixelGFX.pset(ctx, 160 + halfW, y, PAL.epidermisHighlight);
+      PixelGFX.pset(ctx, 160 - halfW + 1, y, PAL.rootWallMid);
+      PixelGFX.pset(ctx, 160 + halfW - 1, y, PAL.rootWallMid);
     }
 
-    // 4. Núcleos celulares brillando dentro de las células del córtex y meristemo
-    for (let y = 8; y < 145; y += 11) {
-      const taper = y > 112 ? Math.sqrt(Math.max(0, 1 - Math.pow((y - 112) / 50, 2))) : 1.0;
-      const halfW = Math.round(25 * taper);
-      if (halfW < 8) continue;
-      for (let frac of [-0.82, -0.52, 0.52, 0.82]) {
-        const nx = 160 + Math.round(frac * halfW);
-        const ny = y + 5;
-        PixelGFX.circleFill(ctx, nx, ny, 1, PAL.chloroplast);
-        PixelGFX.pset(ctx, nx, ny, PAL.white);
+    // Células individuales biseladas del córtex y epidermis (evitando rejilla plana de ladrillos)
+    let curY = 2;
+    while (curY < 146) {
+      const cellH = curY > 116 ? 7 : 11;
+      const midY = curY + Math.floor(cellH * 0.5);
+      let taper = 1.0;
+      if (midY > 112) {
+        const t = (midY - 112) / (rootTipY - 112);
+        taper = Math.sqrt(Math.max(0, 1 - t * t));
       }
+      const halfW = Math.round(25 * taper);
+      if (halfW >= 10) {
+        const bands = [
+          { f0: -0.96, f1: -0.64 },
+          { f0: -0.62, f1: -0.28 },
+          { f0:  0.28, f1:  0.62 },
+          { f0:  0.64, f1:  0.96 }
+        ];
+        for (let b = 0; b < bands.length; b++) {
+          const x0 = 160 + Math.round(bands[b].f0 * halfW);
+          const x1 = 160 + Math.round(bands[b].f1 * halfW);
+          const cw = x1 - x0;
+          if (cw >= 4) {
+            PixelGFX.bevelRect(ctx, x0, curY, cw, cellH - 1, '#0d3024', PAL.rootWallLight, PAL.rootWallDark, PAL.rootWallMid);
+            // Núcleo celular con nucléolo brillante
+            const nx = x0 + Math.floor(cw * 0.5);
+            const ny = curY + Math.floor((cellH - 1) * 0.5);
+            PixelGFX.circleFill(ctx, nx, ny, 1, PAL.chloroplast);
+            PixelGFX.pset(ctx, nx, ny, PAL.white);
+          }
+        }
+      }
+      curY += cellH;
+    }
+
+    // Cilindro Vascular Central (Estela: Endodermis con Banda de Caspary, Floema y Xilema Helicoidal)
+    for (let y = rootTopY; y < 146; y++) {
+      let taper = 1.0;
+      if (y > 112) {
+        const t = (y - 112) / (rootTipY - 112);
+        taper = Math.sqrt(Math.max(0, 1 - t * t));
+      }
+      const steleHalfW = Math.max(2, Math.round(6 * taper));
+      PixelGFX.rect(ctx, 160 - steleHalfW, y, steleHalfW * 2 + 1, 1, '#143828');
+      // Endodermis y Banda de Caspary
+      const endodermCol = (y % 4 === 0) ? PAL.xylemGold : PAL.neonEmerald;
+      PixelGFX.pset(ctx, 160 - steleHalfW, y, endodermCol);
+      PixelGFX.pset(ctx, 160 + steleHalfW, y, endodermCol);
+
+      // Tubos cribosos del floema (naranja cálido con placas cribosas cada 6px)
+      const phloemCol = (y % 6 === 0) ? PAL.xylemLight : PAL.phloemOrange;
+      PixelGFX.pset(ctx, 160 - 3, y, phloemCol);
+      PixelGFX.pset(ctx, 160 + 3, y, phloemCol);
+
+      // Vasos del Xilema central con engrosamientos anulares/helicoidales de lignina
+      const isRing = (y % 3 === 0);
+      PixelGFX.pset(ctx, 160 - 1, y, isRing ? PAL.xylemLight : PAL.xylemGold);
+      PixelGFX.pset(ctx, 160,     y, isRing ? PAL.white : PAL.xylemGold);
+      PixelGFX.pset(ctx, 160 + 1, y, isRing ? PAL.xylemLight : '#b87d00');
     }
 
     // 5. Pulsos luminosos de transporte vascular (Agua/Minerales subiendo, Fotosintatos bajando)
     for (let p = 0; p < 8; p++) {
-      // Agua y minerales subiendo en cian hacia el tallo
       const upY = 145 - ((time * 38 + p * 19) % 145);
-      PixelGFX.circleFill(ctx, 160 - 2, upY, 1, PAL.neonCyanLight);
-      PixelGFX.circleFill(ctx, 160 + 2, upY, 1, PAL.neonCyan);
+      PixelGFX.circleFill(ctx, 160 - 3, upY, 1, PAL.neonCyanLight);
+      PixelGFX.circleFill(ctx, 160 + 3, upY, 1, PAL.neonCyan);
 
-      // Auxinas y azúcares bajando en dorado hacia el ápice radicular
       const downY = (time * 32 + p * 18) % 148;
       PixelGFX.circleFill(ctx, 160, downY, 2, PAL.xylemGold);
       PixelGFX.pset(ctx, 160, downY, PAL.white);
     }
 
-    // Brillo mitótico en el meristemo apical (punta de la raíz en y = 148..162)
+    // Cofia / Caliptra en el ápice radicular (y = 146..162) con células columelares y estatolitos
+    for (let cy = 146; cy <= 160; cy += 3) {
+      const span = Math.max(2, Math.round((162 - cy) * 0.75));
+      PixelGFX.line(ctx, 160 - span, cy, 160 + span, cy, PAL.rootWallLight);
+      PixelGFX.pset(ctx, 160, cy + 1, PAL.xylemLight);
+    }
     PixelGFX.ditherGlow(ctx, 160, 150, 3, 20 + Math.sin(time * 5) * 4, PAL.chloroplast, 0.85);
     PixelGFX.sparkle(ctx, 160, 150, 2, PAL.xylemGold, PAL.white);
 
@@ -240,7 +292,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.ditherGlow(ctx, 92, 90, 15, 80, PAL.rootWallDark, 0.85);
     PixelGFX.ditherGlow(ctx, 215, 90, 15, 85, PAL.nebulaViolet, 0.75);
 
-    // 1. Tejido Cortical de la Raíz a la izquierda (x: 14..144) donde se alojan los Arbúsculos
+    // 1. Tejido Cortical de la Raíz a la izquierda (x: 18..136) con células biseladas orgánicas y vacuolas
     const cellCols = [18, 58, 98];
     const cellW = 38;
     const cellH = 42;
@@ -249,11 +301,10 @@ window.MicroCosmos = window.MicroCosmos || {};
       const cx0 = cellCols[colIdx];
       for (let rowIdx = 0; rowIdx < 4; rowIdx++) {
         const cy0 = 8 + rowIdx * (cellH + 2) - (colIdx % 2) * 12;
-        // Interior de la célula vegetal
-        PixelGFX.rect(ctx, cx0, cy0, cellW, cellH, PAL.rootCellFill);
-        // Pared celular vegetal de doble capa
-        PixelGFX.rectOutline(ctx, cx0, cy0, cellW, cellH, PAL.rootWallMid);
-        PixelGFX.rectOutline(ctx, cx0 + 1, cy0 + 1, cellW - 2, cellH - 2, PAL.rootWallLight);
+
+        // Pared celular vegetal biselada de doble capa (sin esquinas cuadradas rígidas)
+        PixelGFX.bevelRect(ctx, cx0, cy0, cellW, cellH, PAL.rootCellFill, PAL.rootWallLight, PAL.rootWallDark, PAL.rootWallMid);
+        PixelGFX.bevelRect(ctx, cx0 + 2, cy0 + 2, cellW - 4, cellH - 4, '#082119', PAL.rootWallMid, PAL.rootWallDark, PAL.rootWallDark);
 
         // En las células corticales medias/internas, dibujar ARBÚSCULOS MICORRÍCICOS ramificados
         const hasArbuscule =
@@ -265,14 +316,17 @@ window.MicroCosmos = window.MicroCosmos || {};
           const acy = cy0 + Math.floor(cellH * 0.5);
           const pulse = 0.75 + 0.25 * Math.sin(time * 4.5 + colIdx + rowIdx);
 
-          // Halo de intercambio de nutrientes dentro de la célula
+          // Membrana periarbuscular y halo de intercambio simbiótico
           PixelGFX.ditherGlow(ctx, acx, acy, 2, 16 * pulse, PAL.arbusculeViolet, 0.85);
           PixelGFX.ditherGlow(ctx, acx, acy, 1, 9 * pulse, PAL.arbusculePink, 0.9);
+          PixelGFX.circleOutline(ctx, acx, acy, 13, '#1f5c48');
 
-          // Tronco hifal penetrando desde la derecha hacia el centro de la célula
+          // Tronco hifal penetrando con apresorio brillante desde la derecha
+          PixelGFX.line(ctx, cx0 + cellW, acy + 1, acx, acy + 1, PAL.hyphaDark);
           PixelGFX.line(ctx, cx0 + cellW, acy, acx, acy, PAL.hyphaBright);
+          PixelGFX.circleFill(ctx, cx0 + cellW - 2, acy, 1, PAL.hyphaCore);
 
-          // Ramificación dicotómica del Arbúsculo (estructura arbórea fúngica intracelular)
+          // Ramificación dicotómica fractal del Arbúsculo (3 niveles de detalle)
           for (let branch = 0; branch < 8; branch++) {
             const bAngle = (branch * Math.PI * 2) / 8 + Math.sin(time * 2 + rowIdx) * 0.15;
             const bLen = 11;
@@ -280,21 +334,27 @@ window.MicroCosmos = window.MicroCosmos || {};
             const by1 = acy + Math.round(Math.sin(bAngle) * (bLen * 0.55));
             PixelGFX.line(ctx, acx, acy, bx1, by1, PAL.arbusculePink);
 
-            // Sub-ramas finas del arbúsculo
             for (let sub of [-0.45, 0.45]) {
               const bx2 = bx1 + Math.round(Math.cos(bAngle + sub) * (bLen * 0.5));
               const by2 = by1 + Math.round(Math.sin(bAngle + sub) * (bLen * 0.5));
               PixelGFX.line(ctx, bx1, by1, bx2, by2, PAL.arbusculeLight);
-              PixelGFX.pset(ctx, bx2, by2, (branch % 2 === 0) ? PAL.xylemGold : PAL.hyphaBright);
+              const bx3 = bx2 + Math.round(Math.cos(bAngle + sub * 1.4) * 2.2);
+              const by3 = by2 + Math.round(Math.sin(bAngle + sub * 1.4) * 2.2);
+              PixelGFX.pset(ctx, bx3, by3, (branch % 2 === 0) ? PAL.xylemGold : PAL.hyphaBright);
             }
           }
           // Núcleo brillante del arbúsculo
           PixelGFX.circleFill(ctx, acx, acy, 2, PAL.starGoldLight);
           PixelGFX.pset(ctx, acx, acy, PAL.white);
         } else {
-          // Célula vegetal normal con núcleo y vacuola
-          PixelGFX.circleFill(ctx, cx0 + 10, cy0 + 12, 3, PAL.chloroplast);
-          PixelGFX.pset(ctx, cx0 + 10, cy0 + 12, PAL.white);
+          // Célula vegetal normal con gran vacuola central tonopástica, citoplasma y núcleo detallado
+          PixelGFX.bevelRect(ctx, cx0 + 6, cy0 + 14, cellW - 12, cellH - 20, '#0d3629', '#195e47', '#072119', '#144a38');
+          PixelGFX.circleFill(ctx, cx0 + 11, cy0 + 9, 3, PAL.chloroplast);
+          PixelGFX.circleFill(ctx, cx0 + 10, cy0 + 8, 1, PAL.white);
+          // Gránulos citoplasmáticos en ciclosis
+          const gx = cx0 + 24 + Math.round(Math.cos(time * 2 + rowIdx) * 3);
+          const gy = cy0 + 10 + Math.round(Math.sin(time * 2 + colIdx) * 2);
+          PixelGFX.pset(ctx, gx, gy, PAL.epidermisHighlight);
         }
       }
     }
@@ -305,7 +365,6 @@ window.MicroCosmos = window.MicroCosmos || {};
       { x0: 136, y0: 74, x1: 315, y1: 68, amp: 10, freq: 0.05, speed: 2.5 },
       { x0: 136, y0: 108, x1: 312, y1: 122, amp: 9, freq: 0.04, speed: 2.0 },
       { x0: 136, y0: 142, x1: 305, y1: 166, amp: 7, freq: 0.05, speed: 2.8 },
-      // Hifas secundarias diagonales interconectando la red (Wood Wide Web)
       { x0: 175, y0: 36, x1: 255, y1: 126, amp: 6, freq: 0.06, speed: 1.9 },
       { x0: 195, y0: 145, x1: 280, y1: 48, amp: 6, freq: 0.05, speed: 2.3 }
     ];
@@ -324,11 +383,9 @@ window.MicroCosmos = window.MicroCosmos || {};
         const curX = Math.round(baseX);
         const curY = Math.round(baseY + wave);
 
-        // Tubo de la hifa fúngica (doble línea para dar grosor celular)
         PixelGFX.line(ctx, prevX, prevY + 1, curX, curY + 1, PAL.hyphaDark);
         PixelGFX.line(ctx, prevX, prevY, curX, curY, PAL.hyphaMid);
 
-        // Septos y vesículas brillantes a lo largo de la hifa
         if (s % 9 === 0) {
           PixelGFX.pset(ctx, curX, curY, PAL.hyphaCore);
         }
@@ -337,8 +394,6 @@ window.MicroCosmos = window.MicroCosmos || {};
         prevY = curY;
       }
 
-      // Paquetes de nutrientes viajando en ambas direcciones por la hifa:
-      // Fósforo/Agua (Cian) hacia la raíz (t: 1 -> 0), Carbono/Glucosa (Dorado) hacia el hongo (t: 0 -> 1)
       for (let pkt = 0; pkt < 3; pkt++) {
         const tPhos = 1.0 - ((time * 0.32 + pkt * 0.33 + h * 0.17) % 1.0);
         const pxP = MathUtil.lerp(hp.x0, hp.x1, tPhos);
@@ -353,16 +408,17 @@ window.MicroCosmos = window.MicroCosmos || {};
       }
     }
 
-    // Espora Micorrícica (Glomerospora brillante) unida a la red hifal en (274, 94)
+    // Espora Micorrícica (Glomerospora multicapa brillante) unida a la red hifal en (274, 94)
     const sporeX = 274;
     const sporeY = 94 + Math.round(Math.sin(time * 2.5) * 2);
     PixelGFX.ditherGlow(ctx, sporeX, sporeY, 4, 18, PAL.hyphaMid, 0.75);
-    PixelGFX.circleFill(ctx, sporeX, sporeY, 7, PAL.hyphaDark);
-    PixelGFX.circleFill(ctx, sporeX, sporeY, 5, PAL.hyphaMid);
-    PixelGFX.circleFill(ctx, sporeX - 1, sporeY - 1, 3, PAL.xylemGold);
-    PixelGFX.pset(ctx, sporeX - 1, sporeY - 1, PAL.white);
+    PixelGFX.circleFill(ctx, sporeX, sporeY, 8, '#062b4c');
+    PixelGFX.circleFill(ctx, sporeX, sporeY, 6, PAL.hyphaDark);
+    PixelGFX.circleFill(ctx, sporeX - 1, sporeY - 1, 4, PAL.hyphaMid);
+    PixelGFX.circleFill(ctx, sporeX - 1, sporeY - 1, 2, PAL.xylemGold);
+    PixelGFX.pset(ctx, sporeX - 2, sporeY - 2, PAL.white);
 
-    // 3. Bacterias de la Rizosfera (Rizobios / Bacilos PGPR con flagelos nadando activamente)
+    // 3. Bacterias de la Rizosfera (Rizobios / Bacilos PGPR con sombreado 3D y flagelos)
     const bacteriaSwarm = [
       { cx: 168, cy: 30, rx: 16, ry: 8, speed: 2.4, col: PAL.bacteriaBody, core: PAL.bacteriaCore },
       { cx: 218, cy: 52, rx: 22, ry: 11, speed: -2.1, col: PAL.bacteriaCyan, core: PAL.white },
@@ -379,12 +435,10 @@ window.MicroCosmos = window.MicroCosmos || {};
       const bx = b.cx + Math.cos(ang) * b.rx;
       const by = b.cy + Math.sin(ang * 1.4) * b.ry;
 
-      // Orientación tangente a su trayectoria de nado
       const vx = -Math.sin(ang) * b.rx * b.speed;
       const vy = Math.cos(ang * 1.4) * 1.4 * b.ry * b.speed;
       const heading = Math.atan2(vy, vx);
 
-      // Anillo de señalización química (Quorum Sensing / Factores Nod)
       const signalR = Math.round(((time * 16 + i * 7) % 24));
       if (signalR > 4 && signalR < 16) {
         PixelGFX.circleOutline(ctx, bx, by, signalR, PAL.hyphaDark);
@@ -398,7 +452,7 @@ window.MicroCosmos = window.MicroCosmos || {};
   // ESCENA MICRO 3: ESTOMAS DE LAS HOJAS, CLOROPLASTOS E INTERCAMBIO GASEOSO
   // ============================================================================
   /**
-   * Dibuja un aparato estomático completo (2 células oclusivas reniformes, ostíolo y cloroplastos)
+   * Dibuja un aparato estomático completo con micelación radial de celulosa y grana tilacoidal
    */
   function drawStoma(ctx, cx, cy, scale, openFactor, time, seed) {
     const outerRX = Math.round(28 * scale);
@@ -421,9 +475,8 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.ellipseFill(ctx, cx, cy, outerRX + 4, outerRY + 3, PAL.epidermisDark);
     PixelGFX.ellipseFill(ctx, cx, cy, outerRX + 2, outerRY + 1, PAL.epidermisWall);
 
-    // 3. par de Células Oclusivas (Guard Cells) que se arquean al ganar turgencia
+    // 3. Par de Células Oclusivas (Guard Cells) arriñonadas que se arquean con la turgencia
     const bowShift = Math.round(openFactor * 3 * scale);
-    // Célula oclusiva izquierda y derecha
     PixelGFX.ellipseFill(ctx, cx - bowShift, cy, outerRX - 2, outerRY - 1, PAL.guardCellFill);
     PixelGFX.ellipseFill(ctx, cx + bowShift, cy, outerRX - 2, outerRY - 1, PAL.guardCellFill);
 
@@ -432,23 +485,35 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.ellipseFill(ctx, cx - gcOffset, cy, Math.round(8 * scale), Math.round(13 * scale), PAL.epidermisWall);
     PixelGFX.ellipseFill(ctx, cx + gcOffset, cy, Math.round(8 * scale), Math.round(13 * scale), PAL.epidermisWall);
 
+    // Microfibrillas de celulosa (líneas de micelación radial características de las células oclusivas)
+    for (let side of [-1, 1]) {
+      for (let m = -2; m <= 2; m++) {
+        const ang = m * 0.42;
+        const xIn = cx + side * (poreRX + 2);
+        const yIn = cy + Math.round(Math.sin(ang) * poreRY * 0.7);
+        const xOut = cx + side * (outerRX - 3);
+        const yOut = cy + Math.round(Math.sin(ang) * outerRY * 0.82);
+        PixelGFX.line(ctx, xIn, yIn, xOut, yOut, PAL.guardCellFill);
+      }
+    }
+
     // Vacuolas turgentes dentro de las células oclusivas
     PixelGFX.ellipseFill(ctx, cx - gcOffset, cy, Math.round(4 * scale), Math.round(8 * scale), PAL.epidermisMid);
     PixelGFX.ellipseFill(ctx, cx + gcOffset, cy, Math.round(4 * scale), Math.round(8 * scale), PAL.epidermisMid);
 
-    // Línea divisoria polar (extremos superior e inferior donde se unen las 2 células oclusivas)
+    // Línea divisoria polar con refuerzo terminal
     PixelGFX.line(ctx, cx, cy - outerRY, cx, cy + outerRY, PAL.epidermisHighlight);
 
-    // 4. Ostíolo (Poro Estomático central que se abre y se cierra dinámicamente)
-    PixelGFX.ellipseFill(ctx, cx, cy, poreRX + 2, poreRY + 2, PAL.epidermisHighlight); // pared interna engrosada
+    // 4. Ostíolo (Poro Estomático central con pared ventral engrosada)
+    PixelGFX.ellipseFill(ctx, cx, cy, poreRX + 2, poreRY + 2, PAL.epidermisHighlight);
+    PixelGFX.ellipseFill(ctx, cx, cy, poreRX + 1, poreRY + 1, PAL.epidermisWall);
     PixelGFX.ellipseFill(ctx, cx, cy, poreRX, poreRY, PAL.poreDark);
 
-    // Si el poro está abierto, brillo profundo de la cámara subestomática
     if (openFactor > 0.25) {
       PixelGFX.ditherGlow(ctx, cx, cy, 1, poreRY, PAL.neonCyanDark, 0.8 * openFactor);
     }
 
-    // 5. Cloroplastos circulando por ciclosis dentro de ambas células oclusivas
+    // 5. Cloroplastos con pilas de tilacoides (grana) circulando por ciclosis
     const numChloro = 6;
     for (let side of [-1, 1]) {
       for (let c = 0; c < numChloro; c++) {
@@ -456,11 +521,15 @@ window.MicroCosmos = window.MicroCosmos || {};
         const orbitX = cx + side * gcOffset + Math.round(Math.cos(cAngle) * (5.5 * scale));
         const orbitY = cy + Math.round(Math.sin(cAngle) * (10.5 * scale));
 
-        const chR = Math.max(1, Math.round(2.2 * scale));
-        PixelGFX.circleFill(ctx, orbitX, orbitY, chR, PAL.chloroplast);
-        // Punto de autofluorescencia de clorofila (rojo/magenta o blanco brillante)
+        const chR = Math.max(1, Math.round(2.3 * scale));
+        PixelGFX.circleFill(ctx, orbitX, orbitY, chR, '#1b7a50');
+        PixelGFX.circleFill(ctx, orbitX, orbitY, Math.max(1, chR - 1), PAL.chloroplast);
+        // Pilas de grana tilacoidal y destello de autofluorescencia de clorofila
+        if (chR >= 2) {
+          PixelGFX.line(ctx, orbitX - 1, orbitY, orbitX + 1, orbitY, '#14593d');
+        }
         const isFlashing = ((c + Math.floor(time * 4)) % 3 === 0);
-        PixelGFX.pset(ctx, orbitX, orbitY, isFlashing ? PAL.chloroplastRed : PAL.white);
+        PixelGFX.pset(ctx, orbitX, orbitY - 1, isFlashing ? PAL.chloroplastRed : PAL.white);
       }
     }
 
@@ -489,7 +558,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.rect(ctx, 0, 0, WIDTH, HEIGHT, PAL.leafBg);
     PixelGFX.ditherGlow(ctx, 160, 90, 25, 130, PAL.epidermisDark, 0.9);
 
-    // 2. Mosaico de Células Epidérmicas Foliares (teselación hexagonal/ondulada)
+    // 2. Mosaico de Células Epidérmicas Foliares con doble pared y relieve cuticular
     const hexW = 36;
     const hexH = 26;
     for (let row = -1; row < 8; row++) {
@@ -497,7 +566,6 @@ window.MicroCosmos = window.MicroCosmos || {};
         const hx = col * hexW + (row % 2) * (hexW * 0.5);
         const hy = row * hexH;
 
-        // Dibujar paredes celulares poligonales con ligera ondulación orgánica
         const x0 = Math.round(hx);
         const y0 = Math.round(hy + 6);
         const x1 = Math.round(hx + hexW * 0.5);
@@ -511,17 +579,24 @@ window.MicroCosmos = window.MicroCosmos || {};
         const x5 = Math.round(hx);
         const y5 = Math.round(hy + hexH - 4);
 
+        // Sombra de lámina media
+        PixelGFX.line(ctx, x0, y0 + 1, x1, y1 + 1, PAL.epidermisMid);
+        PixelGFX.line(ctx, x1, y1 + 1, x2, y2 + 1, PAL.epidermisMid);
+        // Pared celular epidérmica primaria
         PixelGFX.line(ctx, x0, y0, x1, y1, PAL.epidermisWall);
         PixelGFX.line(ctx, x1, y1, x2, y2, PAL.epidermisWall);
         PixelGFX.line(ctx, x2, y2, x3, y3, PAL.epidermisWall);
         PixelGFX.line(ctx, x3, y3, x4, y4, PAL.epidermisWall);
         PixelGFX.line(ctx, x4, y4, x5, y5, PAL.epidermisWall);
         PixelGFX.line(ctx, x5, y5, x0, y0, PAL.epidermisWall);
+        // Brillo en los vértices tricelulares
+        PixelGFX.pset(ctx, x1, y1, PAL.epidermisHighlight);
 
-        // Cloroplastos del mesófilo subyacente brillando suavemente
+        // Cloroplastos del parénquima en empalizada subyacente
         const mcx = Math.round(hx + hexW * 0.5 + Math.sin(time * 2 + row + col) * 3);
         const mcy = Math.round(hy + hexH * 0.5 + Math.cos(time * 2 + row) * 2);
-        PixelGFX.circleFill(ctx, mcx, mcy, 1, PAL.rootWallMid);
+        PixelGFX.circleFill(ctx, mcx, mcy, 2, PAL.epidermisMid);
+        PixelGFX.pset(ctx, mcx, mcy, PAL.rootWallLight);
       }
     }
 

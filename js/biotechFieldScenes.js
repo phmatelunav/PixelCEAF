@@ -163,13 +163,15 @@ window.MicroCosmos = window.MicroCosmos || {};
   ], CHAR_MAP);
 
   /**
-   * Dibuja un segmento de brazo con bordes de 1px y sombreado cel-shaded
+   * Dibuja un segmento de brazo con sombreado cilíndrico de 4 tonos y Sel-Out
    */
   function drawArmSegment(ctx, x0, y0, w0, x1, y1, w1, isForearm, sleeveColors) {
-    const outlineCol = sleeveColors ? sleeveColors.outline : PAL.coatOutline;
+    const outlineTop = sleeveColors ? sleeveColors.outline : '#94a3b8';
+    const outlineBot = sleeveColors ? sleeveColors.outline : PAL.coatOutline;
     const lightCol = sleeveColors ? sleeveColors.light : PAL.white;
     const midCol = sleeveColors ? sleeveColors.mid : PAL.coatMid;
     const shadowCol = sleeveColors ? sleeveColors.shadow : PAL.coatShadow;
+    const deepCol = sleeveColors ? sleeveColors.shadow : PAL.coatDeep;
 
     const steps = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
     const dx = x1 - x0;
@@ -190,7 +192,9 @@ window.MicroCosmos = window.MicroCosmos || {};
         let col = midCol;
         if (d < -halfW + 1.2) {
           col = lightCol;
-        } else if (d > halfW - 1.4) {
+        } else if (d > halfW - 0.9) {
+          col = deepCol;
+        } else if (d > halfW - 1.8) {
           col = shadowCol;
         }
         PixelGFX.pset(ctx, px, py, col);
@@ -207,11 +211,11 @@ window.MicroCosmos = window.MicroCosmos || {};
     const botX1 = Math.round(x1 + nx * w1);
     const botY1 = Math.round(y1 + ny * w1);
 
-    PixelGFX.line(ctx, topX0, topY0, topX1, topY1, outlineCol);
-    PixelGFX.line(ctx, botX0, botY0, botX1, botY1, outlineCol);
+    PixelGFX.line(ctx, topX0, topY0, topX1, topY1, outlineTop);
+    PixelGFX.line(ctx, botX0, botY0, botX1, botY1, outlineBot);
 
     if (isForearm) {
-      PixelGFX.line(ctx, topX1, topY1, botX1, botY1, outlineCol);
+      PixelGFX.line(ctx, topX1, topY1, botX1, botY1, outlineBot);
     }
   }
 
@@ -239,23 +243,41 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
     PixelGFX.line(ctx, 0, 74, WIDTH - 1, 74, PAL.labWallLine);
 
-    // Ventana lateral izquierda mostrando cerezos Sakura al exterior
+    // Ventana lateral izquierda mostrando Cordillera de los Andes y cerezos Sakura con volumen
     const winX = 12;
     const winY = 30;
     const winW = 74;
     const winH = 56;
+    const sakuraPalette = [PAL.sakuraShadow, PAL.sakuraDeep, PAL.sakuraMid, PAL.sakuraLight, PAL.sakuraWhite];
     PixelGFX.rect(ctx, winX - 2, winY - 2, winW + 4, winH + 4, PAL.windowFrameDark);
-    PixelGFX.rect(ctx, winX, winY, winW, winH, PAL.skyMid);
-    PixelGFX.rect(ctx, winX, winY + 34, winW, 22, PAL.meadowMid);
-    // Copas de cerezos tras el cristal
-    PixelGFX.ellipseFill(ctx, winX + 20, winY + 30, 18, 12, PAL.sakuraMid);
-    PixelGFX.ellipseFill(ctx, winX + 18, winY + 27, 14, 8, PAL.sakuraLight);
-    PixelGFX.ellipseFill(ctx, winX + 54, winY + 32, 16, 11, PAL.sakuraMid);
-    PixelGFX.ellipseFill(ctx, winX + 52, winY + 29, 12, 7, PAL.sakuraLight);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(winX, winY, winW, winH);
+    ctx.clip();
+    PixelGFX.rect(ctx, winX, winY, winW, 24, PAL.skyTop);
+    PixelGFX.rect(ctx, winX, winY + 24, winW, 14, PAL.skyMid);
+    // Cordillera nevada al fondo
+    for (let x = 0; x < winW; x++) {
+      const mY = winY + 25 + Math.round(Math.sin(x * 0.11) * 5 + Math.cos(x * 0.23) * 3);
+      PixelGFX.line(ctx, winX + x, mY, winX + x, winY + 38, PAL.andesFar);
+      if (mY < winY + 24) {
+        PixelGFX.line(ctx, winX + x, mY, winX + x, mY + 2, PAL.andesSnow);
+      }
+    }
+    PixelGFX.rect(ctx, winX, winY + 36, winW, 20, PAL.meadowMid);
+    PixelGFX.rect(ctx, winX, winY + 46, winW, 10, PAL.meadowDark);
+    // Troncos ramificados y copas de cerezos con racimos de hojas
+    PixelGFX.rect(ctx, winX + 18, winY + 30, 4, 16, PAL.trunkDark);
+    PixelGFX.line(ctx, winX + 19, winY + 30, winX + 19, winY + 45, PAL.trunkHighlight);
+    PixelGFX.foliageCluster(ctx, winX + 20, winY + 26, 16, 11, sakuraPalette, 31);
+    PixelGFX.rect(ctx, winX + 52, winY + 32, 4, 15, PAL.trunkDark);
+    PixelGFX.line(ctx, winX + 53, winY + 32, winX + 53, winY + 46, PAL.trunkHighlight);
+    PixelGFX.foliageCluster(ctx, winX + 54, winY + 28, 15, 10, sakuraPalette, 67);
+    ctx.restore();
     PixelGFX.line(ctx, winX + 37, winY, winX + 37, winY + winH - 1, PAL.windowFrameWhite);
     PixelGFX.rectOutline(ctx, winX, winY, winW, winH, PAL.white);
 
-    // Estantería derecha con matraces Erlenmeyer de callos vegetales y cajas Magenta In Vitro
+    // Estantería derecha doble: Cajas Magenta In Vitro arriba + Matraces Erlenmeyer abajo
     const shelfX = 236;
     const shelfY = 54;
     PixelGFX.rect(ctx, shelfX, shelfY, 74, 3, PAL.windowFrameDark);
@@ -265,19 +287,59 @@ window.MicroCosmos = window.MicroCosmos || {};
       const fx = shelfX + 6 + i * 23;
       const fy = shelfY - 21;
       ctx.drawImage(Sprites.inVitroPlant, fx, fy);
-      // Burbujeo sutil en el medio nutritivo
       if ((Math.floor(globalTime * 4) + i) % 3 === 0) {
         PixelGFX.pset(ctx, fx + 7, fy + 15, PAL.neonCyanLight);
       }
     }
 
-    // 2. Mesada Blanca de Biotecnología Molecular (y = 122)
+    // Segunda repisa inferior con Matraces Erlenmeyer cónicos y medio líquido nutritivo
+    const shelf2Y = 88;
+    PixelGFX.rect(ctx, shelfX, shelf2Y, 74, 3, PAL.windowFrameDark);
+    PixelGFX.line(ctx, shelfX, shelf2Y, shelfX + 73, shelf2Y, PAL.white);
+    const mediaColors = [PAL.neonCyan, PAL.chloroplast, PAL.sakuraMid];
+    for (let i = 0; i < 3; i++) {
+      const ex = shelfX + 14 + i * 22;
+      const ey = shelf2Y - 1;
+      // Cuello del matraz Erlenmeyer y tapón de algodón estéril
+      PixelGFX.rect(ctx, ex - 2, ey - 15, 5, 5, PAL.windowFrameWhite);
+      PixelGFX.rect(ctx, ex - 2, ey - 17, 5, 2, PAL.white);
+      // Cuerpo cónico de vidrio y líquido con menisco brillante
+      for (let r = 0; r < 10; r++) {
+        const hw = 2 + Math.floor(r * 0.55);
+        const ry = ey - 10 + r;
+        const isLiquid = r >= 4;
+        PixelGFX.line(ctx, ex - hw, ry, ex + hw, ry, isLiquid ? mediaColors[i] : '#e2e8f0');
+        PixelGFX.pset(ctx, ex - hw, ry, PAL.windowFrameDark);
+        PixelGFX.pset(ctx, ex + hw, ry, PAL.windowFrameDark);
+        if (r === 4) {
+          PixelGFX.line(ctx, ex - hw + 1, ry, ex + hw - 1, ry, PAL.white);
+        }
+        PixelGFX.pset(ctx, ex - hw + 1, ry, PAL.white);
+      }
+    }
+
+    // 2. Mesada Blanca de Biotecnología Molecular (y = 122) + Gabinetes Clínicos Inferiores
     const deskY = 122;
-    PixelGFX.rect(ctx, 0, deskY, WIDTH, HEIGHT - deskY, PAL.benchBase);
-    PixelGFX.rect(ctx, 0, deskY, WIDTH, 10, PAL.benchFront);
+    PixelGFX.drawLabCabinets(ctx, deskY + 9, HEIGHT, 0, WIDTH);
+    PixelGFX.rect(ctx, 0, deskY, WIDTH, 9, PAL.benchFront);
     PixelGFX.rect(ctx, 0, deskY, WIDTH, 3, PAL.benchSurface);
     PixelGFX.rect(ctx, 0, deskY + 3, WIDTH, 3, PAL.benchTop);
-    PixelGFX.rect(ctx, 0, deskY + 9, WIDTH, 2, PAL.benchShadow);
+    PixelGFX.rect(ctx, 0, deskY + 8, WIDTH, 2, PAL.benchShadow);
+
+    // Carrusel porta-micropipetas y caja de puntas estériles a la derecha de la investigadora
+    const standX = 248;
+    const standY = deskY - 22;
+    PixelGFX.rect(ctx, standX - 5, deskY - 3, 12, 3, PAL.metalDark);
+    PixelGFX.rect(ctx, standX, standY, 2, 20, PAL.metalMid);
+    PixelGFX.rect(ctx, standX - 6, standY + 2, 14, 3, PAL.gloveCyan);
+    PixelGFX.line(ctx, standX - 4, standY + 5, standX - 4, standY + 15, PAL.equipWhite);
+    PixelGFX.line(ctx, standX + 5, standY + 5, standX + 5, standY + 15, PAL.equipWhite);
+    // Caja de puntas estériles (Tip Box)
+    PixelGFX.bevelRect(ctx, 270, deskY - 13, 28, 13, PAL.equipWhite, PAL.white, PAL.equipShade, PAL.metalDark);
+    PixelGFX.rect(ctx, 272, deskY - 11, 24, 4, PAL.gloveCyan);
+    for (let tx = 274; tx < 294; tx += 3) {
+      PixelGFX.pset(ctx, tx, deskY - 10, PAL.white);
+    }
 
     // 3. Termociclador PCR Digital (Izquierda sobre la mesada)
     const pcrX = 14;
@@ -543,24 +605,34 @@ window.MicroCosmos = window.MicroCosmos || {};
     // Nivel de hidratación progresiva del sustrato y las plantas (0.0 -> 1.0)
     const hydration = MathUtil.clamp(localTime / 5.2, 0, 1);
 
-    // 1. Cielo luminoso y colinas exteriores vistas a través de los cristales del invernadero
+    // 1. Cielo luminoso y Cordillera de los Andes vista a través de los cristales del invernadero
     PixelGFX.rect(ctx, 0, 0, WIDTH, 48, PAL.skyTop);
     PixelGFX.rect(ctx, 0, 48, WIDTH, 42, PAL.skyMid);
     PixelGFX.rect(ctx, 0, 90, WIDTH, 34, PAL.skyHorizon);
 
-    // Sol radiante y colinas agrícolas al fondo
+    // Sol radiante
     PixelGFX.circleFill(ctx, 56, 36, 14, PAL.sunbeamCore);
     PixelGFX.ditherGlow(ctx, 56, 36, 12, 34, PAL.sunbeamWarm, 0.7);
 
-    // Colinas verdes y cerezos exteriores en lontananza
+    // Cordillera de los Andes en el horizonte exterior (y = 66 .. 104)
+    for (let x = 0; x < WIDTH; x++) {
+      const farPeak = 74 + Math.round(Math.sin(x * 0.032 + 0.8) * 10 + Math.cos(x * 0.085) * 5);
+      PixelGFX.line(ctx, x, farPeak, x, 108, PAL.andesFar);
+      if (farPeak < 71) {
+        PixelGFX.line(ctx, x, farPeak, x, farPeak + 3, PAL.andesSnow);
+      }
+    }
+
+    // Colinas agrícolas verdes y cerezos exteriores con copas de racimos orgánicos
     PixelGFX.ellipseFill(ctx, 70, 118, 95, 28, PAL.meadowDark);
     PixelGFX.ellipseFill(ctx, 220, 120, 110, 30, PAL.meadowMid);
+    const sakuraPalette = [PAL.sakuraShadow, PAL.sakuraDeep, PAL.sakuraMid, PAL.sakuraLight, PAL.sakuraWhite];
     for (let c = 0; c < 4; c++) {
       const cx = 28 + c * 62;
       const cy = 92 + (c % 2) * 4;
-      PixelGFX.rect(ctx, cx - 1, cy + 4, 3, 10, PAL.trunkDark);
-      PixelGFX.ellipseFill(ctx, cx, cy, 14, 9, PAL.sakuraMid);
-      PixelGFX.ellipseFill(ctx, cx - 2, cy - 2, 10, 6, PAL.sakuraLight);
+      PixelGFX.rect(ctx, cx - 1, cy + 4, 3, 11, PAL.trunkDark);
+      PixelGFX.line(ctx, cx, cy + 4, cx, cy + 14, PAL.trunkHighlight);
+      PixelGFX.foliageCluster(ctx, cx, cy, 14, 9, sakuraPalette, 19 + c * 23);
     }
 
     // 2. Estructura Metálica Acristalada del Invernadero Experimental
@@ -618,19 +690,29 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.rect(ctx, bedX, bedY - 2, bedW, 4, PAL.terracottaLight);
     PixelGFX.line(ctx, bedX, bedY + 1, bedX + bedW - 1, bedY + 1, PAL.terracottaDark);
 
-    // Sustrato de campo que se oscurece progresivamente con el riego (seco -> húmedo)
+    // Sustrato estratificado (humus + perlita blanca arriba, franco-arcilloso al centro, grava de arlita abajo)
     const wetRows = Math.round(hydration * (bedH - 6));
     for (let sy = 0; sy < bedH - 4; sy++) {
       const py = bedY + 2 + sy;
       const isMoist = sy <= wetRows;
-      const baseCol = isMoist
-        ? (sy < wetRows - 6 ? PAL.soilWetDark : PAL.soilWetMid)
-        : (sy < 12 ? PAL.soilDryLight : PAL.soilDryMid);
+      let baseCol;
+      if (sy > bedH - 13) {
+        // Capa inferior de drenaje (arlita / grava volcánica rojiza)
+        baseCol = isMoist ? '#4a2c20' : '#6b4230';
+      } else {
+        baseCol = isMoist
+          ? (sy < wetRows - 6 ? PAL.soilWetDark : PAL.soilWetMid)
+          : (sy < 12 ? PAL.soilDryLight : PAL.soilDryMid);
+      }
       PixelGFX.rect(ctx, bedX, py, bedW, 1, baseCol);
 
-      // Textura granulada de suelo orgánico y minerales
-      for (let sx = 6; sx < bedW - 6; sx += 9) {
-        if ((sx + sy * 3) % 7 === 0) {
+      // Granulometría: perlita blanca en el horizonte superior y guijarros de arlita en la base
+      for (let sx = 6; sx < bedW - 6; sx += 8) {
+        if (sy < 18 && (sx + sy * 5) % 11 === 0) {
+          PixelGFX.pset(ctx, bedX + sx, py, '#e2e8f0'); // perlita agrícola
+        } else if (sy > bedH - 13 && (sx + sy * 3) % 5 === 0) {
+          PixelGFX.rect(ctx, bedX + sx, py, 2, 1, PAL.terracottaDark); // guijarros de arlita
+        } else if ((sx + sy * 3) % 7 === 0) {
           PixelGFX.pset(ctx, bedX + sx, py, isMoist ? PAL.soilDryMid : PAL.soilDryLight);
         }
       }
@@ -665,29 +747,38 @@ window.MicroCosmos = window.MicroCosmos || {};
         PixelGFX.pset(ctx, px, bedY + 4 + rootLen, PAL.chloroplast);
       }
 
-      // B) Tallo aéreo, ramas laterales, hojas turgentes y floración/fructificación sobre el sustrato
+      // B) Tallo aéreo leñoso/herbáceo, ramas laterales, hojas con nervadura central y floración
       const stemTopY = py - 19 - lift - (p % 2) * 3;
-      PixelGFX.line(ctx, px, py, px + sway, stemTopY, PAL.rootWallLight);
-      PixelGFX.line(ctx, px + 1, py, px + 1 + sway, stemTopY, PAL.epidermisMid);
+      PixelGFX.line(ctx, px, py, px + sway, stemTopY, PAL.epidermisWall);
+      PixelGFX.line(ctx, px + 1, py, px + 1 + sway, stemTopY, PAL.chloroplast);
 
-      // Pares de hojas detalladas
+      // Pares de hojas lanceoladas con nervadura central iluminada
       const leafSpread = 6 + Math.round(plantVigor * 2);
-      PixelGFX.ellipseFill(ctx, px - leafSpread + sway, stemTopY + 9, 5, 3, PAL.epidermisWall);
-      PixelGFX.ellipseFill(ctx, px - leafSpread + sway, stemTopY + 8, 4, 2, PAL.chloroplast);
+      const lLeafX = px - leafSpread + sway;
+      const lLeafY = stemTopY + 8;
+      PixelGFX.ellipseFill(ctx, lLeafX, lLeafY + 1, 5, 3, PAL.epidermisWall);
+      PixelGFX.ellipseFill(ctx, lLeafX, lLeafY, 4, 2, PAL.chloroplast);
+      PixelGFX.line(ctx, px + sway - 1, lLeafY + 1, lLeafX - 2, lLeafY, PAL.epidermisHighlight);
 
-      PixelGFX.ellipseFill(ctx, px + leafSpread + sway, stemTopY + 7, 5, 3, PAL.epidermisWall);
-      PixelGFX.ellipseFill(ctx, px + leafSpread + sway, stemTopY + 6, 4, 2, PAL.chloroplast);
+      const rLeafX = px + leafSpread + sway;
+      const rLeafY = stemTopY + 6;
+      PixelGFX.ellipseFill(ctx, rLeafX, rLeafY + 1, 5, 3, PAL.epidermisWall);
+      PixelGFX.ellipseFill(ctx, rLeafX, rLeafY, 4, 2, PAL.chloroplast);
+      PixelGFX.line(ctx, px + sway + 1, rLeafY + 1, rLeafX + 2, rLeafY, PAL.epidermisHighlight);
 
       PixelGFX.ellipseFill(ctx, px + sway, stemTopY, 4, 3, PAL.chloroplast);
       PixelGFX.pset(ctx, px + sway, stemTopY - 1, PAL.epidermisHighlight);
 
-      // Floración de cerezo (Sakura) cuando la hidratación supera el 30%
+      // Floración de cerezo (Sakura de 5 pétalos definidos) cuando la hidratación supera el 30%
       if (plantVigor > 0.3) {
         const fx = px + sway;
         const fy = stemTopY - 3;
-        PixelGFX.circleFill(ctx, fx, fy, 2, PAL.sakuraLight);
-        PixelGFX.pset(ctx, fx - 1, fy, PAL.sakuraPink);
-        PixelGFX.pset(ctx, fx + 1, fy, PAL.sakuraPink);
+        PixelGFX.pset(ctx, fx, fy - 2, PAL.sakuraWhite);
+        PixelGFX.pset(ctx, fx - 2, fy - 1, PAL.sakuraLight);
+        PixelGFX.pset(ctx, fx + 2, fy - 1, PAL.sakuraLight);
+        PixelGFX.pset(ctx, fx - 1, fy + 1, PAL.sakuraMid);
+        PixelGFX.pset(ctx, fx + 1, fy + 1, PAL.sakuraMid);
+        PixelGFX.rect(ctx, fx - 1, fy - 1, 3, 2, PAL.sakuraLight);
         PixelGFX.pset(ctx, fx, fy, PAL.starGold);
       }
 
@@ -760,14 +851,15 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.rect(ctx, torsoX + 18, 160, 11, 5, PAL.metalDark);
     PixelGFX.rect(ctx, torsoX + 19, 160, 9, 3, PAL.white);
 
-    // Macetas de terracota adicionales en el suelo del invernadero (derecha) con frutos CEAF
-    PixelGFX.rect(ctx, 288, 148, 16, 16, PAL.terracottaDark);
-    PixelGFX.rect(ctx, 286, 145, 20, 4, PAL.terracottaLight);
-    PixelGFX.ellipseFill(ctx, 296, 140, 7, 5, PAL.chloroplast);
-    PixelGFX.ellipseFill(ctx, 292, 142, 5, 3, PAL.epidermisWall);
-    PixelGFX.circleFill(ctx, 299, 142, 2, PAL.ceafFruit);
-    PixelGFX.pset(ctx, 298, 141, PAL.ceafFruitLight);
-    PixelGFX.circleFill(ctx, 293, 138, 2, PAL.sakuraLight);
+    // Maceta de terracota cilíndrica sombreada a la derecha con arbolito frutal CEAF en racimos
+    PixelGFX.bevelRect(ctx, 288, 148, 18, 16, PAL.terracottaDark, PAL.terracottaLight, '#7f2d1d', '#451a03');
+    PixelGFX.bevelRect(ctx, 286, 144, 22, 5, PAL.terracottaLight, '#fdba74', PAL.terracottaDark, '#451a03');
+    PixelGFX.rect(ctx, 296, 138, 3, 7, PAL.trunkDark);
+    PixelGFX.foliageCluster(ctx, 297, 135, 9, 6, [PAL.epidermisWall, PAL.epidermisMid, PAL.chloroplast, PAL.epidermisHighlight], 88);
+    PixelGFX.circleFill(ctx, 301, 137, 2, PAL.ceafFruit);
+    PixelGFX.pset(ctx, 300, 136, PAL.ceafFruitLight);
+    PixelGFX.circleFill(ctx, 293, 134, 2, PAL.sakuraLight);
+    PixelGFX.pset(ctx, 293, 134, PAL.starGold);
 
     // Coleta larga con movimiento suave de brisa
     const ponyTieX = headBaseX + 15;
@@ -960,6 +1052,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.rect(ctx, m1X, m1Y, m1W, m1H, PAL.screenBg);
     PixelGFX.rect(ctx, m1X, m1Y, m1W, 5, '#153252');
 
+    // Cinta de hélice alfa y lámina beta 3D con volumen de doble píxel
     const protCX = m1X + 19;
     const protCY = m1Y + 29;
     let prevPX = null;
@@ -969,7 +1062,9 @@ window.MicroCosmos = window.MicroCosmos || {};
       const px = protCX + Math.round(Math.cos(ang) * 11);
       const py = protCY - 15 + a * 2.3 + Math.round(Math.sin(ang * 1.5) * 2);
       const col = a % 3 === 0 ? PAL.neonPinkLight : (a % 2 === 0 ? PAL.neonCyan : PAL.chloroplast);
+      const shadowCol = a % 3 === 0 ? PAL.neonPinkDark : PAL.neonCyanDark;
       if (prevPX !== null) {
+        PixelGFX.line(ctx, prevPX, prevPY + 1, px, py + 1, shadowCol);
         PixelGFX.line(ctx, prevPX, prevPY, px, py, col);
       }
       PixelGFX.pset(ctx, px, py, PAL.white);
@@ -1087,16 +1182,18 @@ window.MicroCosmos = window.MicroCosmos || {};
       PixelGFX.pset(ctx, m3X + 5 + x, y2, PAL.chloroplast);
     }
 
-    // 4. Silla Ergonómica y Personaje Bioinformático (dibujado ANTES de la superficie del escritorio)
+    // 4. Silla Ergonómica de Laboratorio y Personaje Bioinformático
     const isPointing = localTime > 3.6;
     const headBaseX = 223;
     const headBaseY = 54;
     const torsoX = 206;
     const torsoY = 74;
 
-    // Respaldo de silla ergonómica de laboratorio detrás de la investigadora
-    PixelGFX.rect(ctx, torsoX + 26, torsoY + 6, 12, 42, '#1e293b');
-    PixelGFX.rectOutline(ctx, torsoX + 26, torsoY + 6, 12, 42, PAL.metalMid);
+    // Respaldo ergonómico con cabecera, soporte lumbar biselado y apoyabrazos
+    PixelGFX.bevelRect(ctx, torsoX + 25, torsoY - 2, 10, 7, '#1e293b', PAL.metalLight, '#0f172a', PAL.metalDark);
+    PixelGFX.bevelRect(ctx, torsoX + 26, torsoY + 6, 13, 42, '#1e293b', PAL.metalMid, '#0f172a', PAL.metalDark);
+    PixelGFX.rect(ctx, torsoX + 28, torsoY + 12, 8, 28, '#334155');
+    PixelGFX.rect(ctx, torsoX + 20, torsoY + 36, 16, 4, PAL.metalDark);
 
     // Coleta alta
     const ponyTieX = headBaseX + 15;
@@ -1177,10 +1274,22 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, lx, ly - 4 + browOffset, lx + 3, ly - 4 + browOffset, PAL.hairMid);
     PixelGFX.line(ctx, rx + 1, ry - 4 + browOffset, rx + 5, ry - 4 + browOffset, PAL.hairMid);
 
-    // 5. Escritorio Técnico y Teclado Mecánico Retroiluminado (ubicado justo frente a la investigadora)
-    PixelGFX.rect(ctx, 0, deskY, WIDTH, HEIGHT - deskY, '#1e293b');
+    // 5. Escritorio Técnico, Racks Inferiores de Cómputo, Mousepad y Teclado Mecánico Retroiluminado
+    PixelGFX.rect(ctx, 0, deskY, WIDTH, HEIGHT - deskY, '#0f172a');
     PixelGFX.rect(ctx, 0, deskY, WIDTH, 4, '#475569');
     PixelGFX.line(ctx, 0, deskY, WIDTH - 1, deskY, PAL.neonCyan);
+    // Módulos de gabinetes oscuros y nodos de servidor bajo el escritorio
+    for (let gx = 10; gx < WIDTH - 40; gx += 62) {
+      PixelGFX.bevelRect(ctx, gx, deskY + 8, 54, HEIGHT - deskY - 12, '#162238', '#1e293b', '#090d16', '#0b1324');
+      PixelGFX.rect(ctx, gx + 6, deskY + 13, 12, 2, PAL.metalMid);
+      PixelGFX.pset(ctx, gx + 46, deskY + 14, (Math.floor(globalTime * 5 + gx) % 2 === 0) ? PAL.neonCyan : PAL.chloroplast);
+    }
+
+    // Mousepad técnico + Ratón óptico ergonómico junto al teclado
+    PixelGFX.rect(ctx, 152, deskY - 2, 18, 2, '#153252');
+    PixelGFX.rect(ctx, 156, deskY - 5, 9, 4, PAL.metalMid);
+    PixelGFX.line(ctx, 157, deskY - 5, 163, deskY - 5, PAL.white);
+    PixelGFX.pset(ctx, 159, deskY - 4, PAL.neonCyan);
 
     const kbX = 176;
     const kbY = deskY - 5;

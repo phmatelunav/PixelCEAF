@@ -77,17 +77,44 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.ditherGlow(ctx, sunX, sunY, 6, 26, PAL.sunbeamCore, 0.9);
     PixelGFX.circleFill(ctx, sunX, sunY, 6, PAL.sunbeamCore);
 
-    // Nubes blancas suaves en el horizonte
+    // Nubes blancas suaves con volumen pixel-art en el horizonte
     const cloudShift = Math.floor(time * 1.5) % 40;
-    PixelGFX.ellipseFill(ctx, wx + 45 + cloudShift * 0.3, wy + 24, 16, 4, PAL.white);
-    PixelGFX.ellipseFill(ctx, wx + 95 - cloudShift * 0.2, wy + 19, 18, 4, PAL.white);
+    const c1x = Math.round(wx + 45 + cloudShift * 0.3);
+    const c2x = Math.round(wx + 95 - cloudShift * 0.2);
+    PixelGFX.ellipseFill(ctx, c1x, wy + 25, 16, 3, '#d8eeff');
+    PixelGFX.ellipseFill(ctx, c1x - 3, wy + 23, 10, 4, PAL.white);
+    PixelGFX.ellipseFill(ctx, c1x + 5, wy + 24, 8, 3, PAL.white);
+    PixelGFX.ellipseFill(ctx, c2x, wy + 20, 18, 3, '#d8eeff');
+    PixelGFX.ellipseFill(ctx, c2x - 4, wy + 18, 11, 4, PAL.white);
+    PixelGFX.ellipseFill(ctx, c2x + 6, wy + 19, 9, 3, PAL.white);
 
-    // B) Pradera verde primaveral y sendero central en perspectiva
+    // B) Cordillera de los Andes (Valle de O'Higgins) en el horizonte lejano
     const horizonY = wy + 54;
+    const peaks = [
+      { cx: wx + 18, w: 28, h: 14, col: PAL.andesFar },
+      { cx: wx + 46, w: 34, h: 18, col: PAL.andesMid },
+      { cx: wx + 78, w: 30, h: 15, col: PAL.andesFar },
+      { cx: wx + 108, w: 36, h: 19, col: PAL.andesMid }
+    ];
+    for (let p = 0; p < peaks.length; p++) {
+      const pk = peaks[p];
+      for (let dy = 0; dy < pk.h; dy++) {
+        const span = Math.round((dy / pk.h) * (pk.w * 0.5));
+        const py = horizonY - pk.h + dy;
+        PixelGFX.rect(ctx, pk.cx - span, py, span * 2 + 1, 1, pk.col);
+        // Cumbre nevada en el tercio superior
+        if (dy < pk.h * 0.38) {
+          const snowSpan = Math.max(1, span - (dy % 2));
+          PixelGFX.rect(ctx, pk.cx - snowSpan, py, snowSpan, 1, PAL.andesSnow);
+        }
+      }
+    }
+
+    // Pradera verde primaveral y sendero central en perspectiva
     PixelGFX.rect(ctx, wx, horizonY, ww, wh - 54, PAL.meadowLight);
     PixelGFX.ditherGradientV(ctx, wx, horizonY + 8, ww, wh - 62, PAL.meadowMid, PAL.meadowDark);
 
-    // Sendero claro entre las dos hileras de cerezos (perspectiva desde el centro del horizonte)
+    // Sendero claro entre las dos hileras de cerezos con pétalos caídos en los bordes
     const vanishX = wx + Math.floor(ww * 0.52);
     for (let py = horizonY; py < wy + wh; py++) {
       const t = (py - horizonY) / (wh - 54);
@@ -95,24 +122,25 @@ window.MicroCosmos = window.MicroCosmos || {};
       PixelGFX.rect(ctx, vanishX - halfPath, py, halfPath * 2 + 1, 1, PAL.pathLight);
       PixelGFX.pset(ctx, vanishX - halfPath, py, PAL.pathShade);
       PixelGFX.pset(ctx, vanishX + halfPath, py, PAL.pathShade);
+      if (py % 3 === 0) {
+        PixelGFX.pset(ctx, vanishX - halfPath - 1, py, PAL.sakuraLight);
+        PixelGFX.pset(ctx, vanishX + halfPath + 1, py, PAL.sakuraMid);
+      }
     }
 
-    // C) Hileras de Árboles de Cerezo en Flor (Sakura) en perspectiva (de fondo a primer plano)
-    // Hilera izquierda e hilera derecha flanqueando el paseo
+    // C) Hileras de Árboles de Cerezo en Flor (Sakura) con copas multi-racimo y corteza detallada
     const treeRows = [
-      // Par lejano (cerca del horizonte)
       { x: vanishX - 14, baseY: horizonY + 6, trunkH: 10, crownRX: 9, crownRY: 7, swayPhase: 0.2 },
       { x: vanishX + 14, baseY: horizonY + 6, trunkH: 10, crownRX: 9, crownRY: 7, swayPhase: 1.5 },
-      // Par medio-lejano
       { x: vanishX - 26, baseY: horizonY + 13, trunkH: 14, crownRX: 12, crownRY: 9, swayPhase: 2.4 },
       { x: vanishX + 26, baseY: horizonY + 13, trunkH: 14, crownRX: 12, crownRY: 9, swayPhase: 0.8 },
-      // Par medio-cercano
-      { x: vanishX - 42, baseY: horizonY + 21, trunkH: 19, crownRX: 16, crownRY: 11, swayPhase: 3.7 },
-      { x: vanishX + 41, baseY: horizonY + 21, trunkH: 19, crownRX: 16, crownRY: 11, swayPhase: 1.9 },
-      // Par cercano en los extremos del ventanal
-      { x: vanishX - 59, baseY: horizonY + 29, trunkH: 25, crownRX: 20, crownRY: 14, swayPhase: 4.5 },
-      { x: vanishX + 58, baseY: horizonY + 29, trunkH: 25, crownRX: 20, crownRY: 14, swayPhase: 2.9 }
+      { x: vanishX - 42, baseY: horizonY + 21, trunkH: 19, crownRX: 15, crownRY: 11, swayPhase: 3.7 },
+      { x: vanishX + 41, baseY: horizonY + 21, trunkH: 19, crownRX: 15, crownRY: 11, swayPhase: 1.9 },
+      { x: vanishX - 59, baseY: horizonY + 29, trunkH: 25, crownRX: 19, crownRY: 13, swayPhase: 4.5 },
+      { x: vanishX + 58, baseY: horizonY + 29, trunkH: 25, crownRX: 19, crownRY: 13, swayPhase: 2.9 }
     ];
+
+    const sakuraColors = [PAL.sakuraShadow, PAL.sakuraDeep, PAL.sakuraMid, PAL.sakuraLight, PAL.sakuraWhite];
 
     for (let i = 0; i < treeRows.length; i++) {
       const tr = treeRows[i];
@@ -120,23 +148,22 @@ window.MicroCosmos = window.MicroCosmos || {};
       const crownX = tr.x + breeze;
       const crownY = tr.baseY - tr.trunkH;
 
-      // Sombra del árbol sobre el césped
-      PixelGFX.ellipseFill(ctx, tr.x, tr.baseY + 1, Math.round(tr.crownRX * 0.6), 2, PAL.meadowDark);
+      // Sombra proyectada y pétalos sobre el césped
+      PixelGFX.ellipseFill(ctx, tr.x, tr.baseY + 1, Math.round(tr.crownRX * 0.65), 2, PAL.meadowDark);
+      PixelGFX.pset(ctx, tr.x - 3, tr.baseY + 1, PAL.sakuraLight);
+      PixelGFX.pset(ctx, tr.x + 4, tr.baseY + 2, PAL.sakuraMid);
 
-      // Tronco y ramas principales del cerezo
+      // Tronco con raíces acampanadas, corteza texturizada y ramas secundarias
       const trunkW = tr.trunkH > 16 ? 3 : 2;
-      PixelGFX.rect(ctx, tr.x - Math.floor(trunkW / 2), crownY + 2, trunkW, tr.trunkH, PAL.trunkDark);
-      PixelGFX.line(ctx, tr.x, crownY + 3, tr.x, tr.baseY - 1, PAL.trunkLight);
-      PixelGFX.line(ctx, tr.x, crownY + 5, crownX - 4, crownY, PAL.trunkDark);
-      PixelGFX.line(ctx, tr.x, crownY + 5, crownX + 4, crownY, PAL.trunkDark);
+      PixelGFX.rect(ctx, tr.x - Math.floor(trunkW / 2), crownY + 2, trunkW, tr.trunkH, PAL.trunkBarkDark);
+      PixelGFX.line(ctx, tr.x - Math.floor(trunkW / 2), crownY + 3, tr.x - Math.floor(trunkW / 2), tr.baseY - 1, PAL.trunkLight);
+      PixelGFX.pset(ctx, tr.x - Math.floor(trunkW / 2) - 1, tr.baseY, PAL.trunkDark);
+      PixelGFX.pset(ctx, tr.x + Math.ceil(trunkW / 2), tr.baseY, PAL.trunkBarkDark);
+      PixelGFX.line(ctx, tr.x, crownY + 6, crownX - Math.round(tr.crownRX * 0.4), crownY + 1, PAL.trunkDark);
+      PixelGFX.line(ctx, tr.x, crownY + 5, crownX + Math.round(tr.crownRX * 0.4), crownY + 1, PAL.trunkBarkDark);
 
-      // Copa frondosa de flores de cerezo en capas (sombra rosa intenso -> rosa medio -> rosa claro -> brillos blancos)
-      PixelGFX.ellipseFill(ctx, crownX, crownY + 2, tr.crownRX, tr.crownRY, PAL.sakuraDeep);
-      PixelGFX.ellipseFill(ctx, crownX - 2, crownY, tr.crownRX - 1, tr.crownRY - 1, PAL.sakuraMid);
-      PixelGFX.ellipseFill(ctx, crownX - Math.round(tr.crownRX * 0.35), crownY - 1, Math.round(tr.crownRX * 0.6), Math.round(tr.crownRY * 0.65), PAL.sakuraLight);
-      PixelGFX.ellipseFill(ctx, crownX + Math.round(tr.crownRX * 0.3), crownY - 1, Math.round(tr.crownRX * 0.55), Math.round(tr.crownRY * 0.6), PAL.sakuraLight);
-      // Racimos superiores iluminados por el sol
-      PixelGFX.ellipseFill(ctx, crownX - 2, crownY - Math.round(tr.crownRY * 0.35), Math.round(tr.crownRX * 0.55), Math.round(tr.crownRY * 0.4), PAL.sakuraWhite);
+      // Copa frondosa multi-racimo en 5 tonos de flor de cerezo
+      PixelGFX.foliageCluster(ctx, crownX, crownY, tr.crownRX, tr.crownRY, sakuraColors, i * 3.1);
     }
 
     // D) Pétalos de cerezo volando suavemente con la brisa primaveral
@@ -305,18 +332,25 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.rect(ctx, sx, sy, sw, 3, PAL.benchSurface);
     PixelGFX.rect(ctx, sx, sy + 2, sw, 1, PAL.windowFrameDark);
 
-    // Frascos de reactivos y buffers sobre la estantería blanca
+    // Frascos de reactivos y buffers sobre la estantería blanca (con menisco, etiqueta y brillo especular)
     const bottles = [
-      { x: sx + 5, c: PAL.neonCyanMid, cap: '#1d4ed8' },
-      { x: sx + 16, c: PAL.neonEmerald, cap: '#ea580c' },
-      { x: sx + 27, c: PAL.growLedViolet, cap: '#00bbf9' }
+      { x: sx + 5, c: PAL.neonCyanMid, light: PAL.neonCyanLight, cap: '#1d4ed8' },
+      { x: sx + 16, c: PAL.neonEmerald, light: PAL.chloroplast, cap: '#ea580c' },
+      { x: sx + 27, c: PAL.growLedViolet, light: PAL.neonPinkLight, cap: '#00bbf9' }
     ];
     for (let i = 0; i < bottles.length; i++) {
       const b = bottles[i];
       PixelGFX.rect(ctx, b.x + 2, sy - 14, 5, 2, b.cap);
-      PixelGFX.rect(ctx, b.x, sy - 12, 9, 12, PAL.windowFrameDark);
-      PixelGFX.rect(ctx, b.x + 1, sy - 11, 7, 10, PAL.white);
+      PixelGFX.pset(ctx, b.x + 3, sy - 14, PAL.white);
+      PixelGFX.rect(ctx, b.x + 2, sy - 12, 5, 2, PAL.windowFrameDark);
+      PixelGFX.rect(ctx, b.x, sy - 10, 9, 10, PAL.windowFrameDark);
+      PixelGFX.rect(ctx, b.x + 1, sy - 9, 7, 8, '#e2eef8');
       PixelGFX.rect(ctx, b.x + 1, sy - 7, 7, 6, b.c);
+      PixelGFX.line(ctx, b.x + 1, sy - 7, b.x + 7, sy - 7, b.light);
+      // Etiqueta blanca graduada y reflejo vertical de vidrio
+      PixelGFX.rect(ctx, b.x + 3, sy - 5, 4, 3, PAL.white);
+      PixelGFX.line(ctx, b.x + 4, sy - 4, b.x + 5, sy - 4, PAL.metalMid);
+      PixelGFX.line(ctx, b.x + 1, sy - 9, b.x + 1, sy - 2, PAL.white);
     }
 
     // Termociclador PCR blanco/plata sobre el estante
@@ -371,20 +405,29 @@ window.MicroCosmos = window.MicroCosmos || {};
   }
 
   /**
-   * 6. Mesada Blanca de Biotecnología, Computadoras y Cultivo de Tejidos In Vitro
+   * 6. Mesada Blanca de Biotecnología, Gabinetes Clínicos, Computadoras y Cultivo In Vitro
    */
   function drawWhiteBenchAndComputers(ctx, time) {
     const deskY = 130;
 
-    // Superficie y frente de la mesada blanca clínica
-    PixelGFX.rect(ctx, 0, deskY, WIDTH, HEIGHT - deskY, PAL.benchBase);
-    PixelGFX.rect(ctx, 0, deskY, WIDTH, 10, PAL.benchFront);
+    // Superficie de la mesada blanca clínica y mobiliario de cajoneras/gabinetes debajo
+    PixelGFX.rect(ctx, 0, deskY, WIDTH, 9, PAL.benchFront);
     PixelGFX.rect(ctx, 0, deskY, WIDTH, 3, PAL.benchSurface);
     PixelGFX.rect(ctx, 0, deskY + 3, WIDTH, 3, PAL.benchTop);
-    PixelGFX.rect(ctx, 0, deskY + 9, WIDTH, 2, PAL.benchShadow);
+    PixelGFX.drawLabCabinets(ctx, deskY + 8, HEIGHT, 0, WIDTH);
 
     // Reflejo cálido de la luz de la ventana sobre la mesada blanca
     PixelGFX.rect(ctx, 118, deskY, 88, 2, PAL.sunbeamCore);
+
+    // Soporte carrusel de micropipetas sobre la mesada (x = 224)
+    const pipStandX = 224;
+    PixelGFX.rect(ctx, pipStandX, deskY - 2, 10, 2, PAL.metalDark);
+    PixelGFX.line(ctx, pipStandX + 5, deskY - 16, pipStandX + 5, deskY - 2, PAL.metalLight);
+    PixelGFX.rect(ctx, pipStandX + 1, deskY - 15, 8, 2, PAL.metalMid);
+    PixelGFX.line(ctx, pipStandX + 2, deskY - 14, pipStandX + 2, deskY - 7, PAL.pipetteBody);
+    PixelGFX.pset(ctx, pipStandX + 2, deskY - 16, PAL.neonPink);
+    PixelGFX.line(ctx, pipStandX + 8, deskY - 14, pipStandX + 8, deskY - 7, PAL.pipetteBody);
+    PixelGFX.pset(ctx, pipStandX + 8, deskY - 16, PAL.neonCyan);
 
     // 1. Cultivo In Vitro y Tubos Eppendorf (Izquierda)
     const plantVesselX = 18;

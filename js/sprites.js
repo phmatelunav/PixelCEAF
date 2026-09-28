@@ -118,16 +118,18 @@ window.MicroCosmos = window.MicroCosmos || {};
   // SPRITES PIXEL-ART DE LA INVESTIGADORA (CABEZA, TORSO Y MANOS ARTICULADAS)
   // ============================================================================
   const SCIENTIST_MAP = {
-    // Cabello
-    'H': '#191024', // sombra profunda del cabello
-    'h': '#2d1d42', // tono medio del cabello
-    'l': '#4a3168', // reflejo violeta del cabello
+    // Cabello con 5 niveles de profundidad y brillo por racimos
+    'H': '#150d21', // sombra profunda del cabello
+    'h': '#27183b', // tono medio del cabello
+    'l': '#432b63', // reflejo violeta del cabello
+    'v': '#64448f', // luz secundaria de mechones
     's': '#4895ef', // brillo azulado sutil
     'M': '#f72585', // coletero magenta
     'm': '#ff75b8', // luz del coletero
 
-    // Piel y rostro
+    // Piel y rostro con Selective Outlining (Sel-Out)
     'o': '#7d4038', // contorno oscuro de piel (mandíbula/dedos/nariz)
+    'q': '#9e5448', // contorno suave Sel-Out para mejilla iluminada
     'd': '#b86958', // sombra de piel
     'k': '#eba087', // tono medio de piel
     'f': '#ffcab5', // luz de piel
@@ -146,11 +148,13 @@ window.MicroCosmos = window.MicroCosmos || {};
     // Bata de laboratorio y blusa
     'O': '#54688a', // contorno exterior de bata
     'S': '#93a8c9', // sombra de pliegues de bata
+    'c': '#b8cbe6', // semisombra suave de tela
     'B': '#dce7f7', // tono medio de bata
     'W': '#ffffff', // luz principal de bata
     'T': '#0d4740', // blusa esmeralda oscura
     't': '#177366', // blusa esmeralda media
-    'E': '#10b981', // verde de gafete biotech
+    'E': '#1e8238', // verde de gafete / hoja CEAF
+    'F': '#d45132', // esfera naranja CEAF
     'P': '#f72585'  // bolígrafo rosa
   };
 
@@ -175,9 +179,9 @@ window.MicroCosmos = window.MicroCosmos || {};
     '......OWBBBBBOOBBBOOOOWWWWWWWBBBBBSO.',
     '......OWBBBBBBOOBBOWWOWWWWWWWBBBBBBSO',
     '......OWBBBBBBBOOBOWWOWWOOOOOBBBBBSO',
-    '......OWBBBBBBBBOOBWWOWOEEEEOBBBBBSO',
+    '......OWBBBBBBBBOOBWWOWOPwEEOBBBBBSO',
     '......OWBBBBBSBBBOOWWOWOwwwwOBBBBBSO',
-    '......OWBBBBBSBBBBOOOOWOwEEwOBBBBBSO',
+    '......OWBBBBBSBBBBOOOOWOwEFwOBBBBBSO',
     '......OWBBBBBSBBBBOWWWOWOwwwwOBBBBBSO',
     '......OWBBBBBSBBBBOWYWOWOOOOOOBBBBBSO',
     '......OWBBBBBSBBBBOWWWOWWWWWWWBBBBBSO',
@@ -216,30 +220,30 @@ window.MicroCosmos = window.MicroCosmos || {};
     '.......OOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
   ], SCIENTIST_MAP);
 
-  // Cabeza y Rostro esculpido en Pixel-Art (28x23) con pómulo, mentón fino, nariz y mechón lateral
+  // Cabeza y Rostro esculpido en Pixel-Art (28x23) con mechones volumétricos y Sel-Out en mejilla/mandíbula
   const scientistHeadSprite = compileSprite([
     '.......HHHHHHHHHHHHHH.......',
     '.....HHHHhhhhhhhhhhHHHH.....',
-    '....HHHhhhllllllllhhhHHH....',
-    '...HHHhhllllssssllllhhHHH...',
-    '..HHHhhllhhhhhhhhhhllhhHHH..',
+    '....HHHhhhllvvvvllhhhHHH....',
+    '...HHHhhllvvssssvvllhhHHH...',
+    '..HHHhhllvvhhhhhhvvllhhHHH..',
     '..HHhhlhhHHHHHHHHhhhlhhhHH..',
     '.HHhhlhHHHHkkffkkHHHHlhhhHH.',
     '.HHhlhHHHkkffffffkkHHHlhhHH.',
     '.HHhhHHkkffffffffffkkHHhhHH.',
     '.HHhHHkffffffffffffffkHHhHH.',
-    '..H.okffffffffffffffffkHHH..',
-    '....okffffffffffffffffkHHH..',
-    '...ookffffffffffffffffkHHH..',
-    '..offfffffffffffffffHkdoHH..',
-    '..okffffffffffffffffHkkdoH..',
-    '...ookffffffffffffffHkkCo...',
-    '....okffffffffffffffHkkdo...',
-    '....okfffbbbffffffffHooo....',
-    '.....okffbbbfffffffkdo......',
-    '.....ookffffffffffkdo.......',
-    '......ookffffffffkdo........',
-    '........ookkkkkkdoo.........',
+    '..H.qkffffffffffffffffkHHH..',
+    '....qkffffffffffffffffkHHH..',
+    '...oqkffffffffffffffffkHHH..',
+    '..qffffffffffffffffHkdoHH...',
+    '..qkffffffffffffffffHkkdoH..',
+    '...oqkffffffffffffffHkkCo...',
+    '....qkfffffffffffffkHkkdo...',
+    '....qkfffbbbfffffffkHooo....',
+    '.....qkffbbbffffffkkdo......',
+    '.....oqkfffffffffkkdo.......',
+    '......oqkfffffffkkdo........',
+    '........oqqkkkkkdoo.........',
     '..........ooooooo...........'
   ], SCIENTIST_MAP);
 
@@ -326,11 +330,10 @@ window.MicroCosmos = window.MicroCosmos || {};
     const dx = x1 - x0;
     const dy = y1 - y0;
     const len = Math.max(1, Math.hypot(dx, dy));
-    // Vector normal perpendicular al brazo
     const nx = -dy / len;
     const ny = dx / len;
 
-    // 1. Relleno interior de la manga (sombra inferior, medio central y luz superior)
+    // 1. Relleno interior de la manga en 4 tonos (luz superior -> medio claro -> semisombra -> sombra inferior)
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
       const cx = MathUtil.lerp(x0, x1, t);
@@ -341,16 +344,18 @@ window.MicroCosmos = window.MicroCosmos || {};
         const px = Math.round(cx + nx * d);
         const py = Math.round(cy + ny * d);
         let col = PAL.coatMid;
-        if (d < -halfW + 1.2) {
-          col = PAL.white; // luz superior de la manga
-        } else if (d > halfW - 1.4) {
-          col = PAL.coatShadow; // sombra inferior de la manga
+        if (d < -halfW + 1.1) {
+          col = PAL.white;
+        } else if (d > halfW - 1.1) {
+          col = PAL.coatShadow;
+        } else if (d > 0.35) {
+          col = '#c5d6ed';
         }
         PixelGFX.pset(ctx, px, py, col);
       }
     }
 
-    // 2. Bordes exteriores limpios de 1px (Bresenham) arriba y abajo de la manga
+    // 2. Bordes exteriores limpios de 1px (Sel-Out: borde superior suave, borde inferior oscuro)
     const topX0 = Math.round(x0 - nx * w0);
     const topY0 = Math.round(y0 - ny * w0);
     const topX1 = Math.round(x1 - nx * w1);
@@ -361,10 +366,9 @@ window.MicroCosmos = window.MicroCosmos || {};
     const botX1 = Math.round(x1 + nx * w1);
     const botY1 = Math.round(y1 + ny * w1);
 
-    PixelGFX.line(ctx, topX0, topY0, topX1, topY1, PAL.coatOutline);
+    PixelGFX.line(ctx, topX0, topY0, topX1, topY1, '#758bad');
     PixelGFX.line(ctx, botX0, botY0, botX1, botY1, PAL.coatOutline);
 
-    // Si es el antebrazo, dibujar la costura del puño de la manga cerca de la muñeca
     if (isForearm) {
       PixelGFX.line(ctx, topX1, topY1, botX1, botY1, PAL.coatOutline);
     }
@@ -490,10 +494,10 @@ window.MicroCosmos = window.MicroCosmos || {};
 
     const breath = Math.round(Math.sin(time * 2.4) * 1);
 
-    const headBaseX = Math.round(MathUtil.lerp(198, 179, leanProgress) + amazed * 4);
+    const headBaseX = Math.round(MathUtil.lerp(187, 178, leanProgress) + amazed * 4);
     const headBaseY = Math.round(MathUtil.lerp(55, 58, leanProgress) + breath * (1 - leanProgress * 0.7));
 
-    const torsoX = Math.round(MathUtil.lerp(182, 166, leanProgress) + amazed * 3);
+    const torsoX = Math.round(MathUtil.lerp(170, 164, leanProgress) + amazed * 3);
     const torsoY = 75 + breath;
 
     // ==========================================
@@ -539,8 +543,8 @@ window.MicroCosmos = window.MicroCosmos || {};
       const isUnderChin = (ny <= headBaseY + 19);
 
       // Contorno exterior de piel (1px a cada lado)
-      PixelGFX.pset(ctx, nx - 3, ny, PAL.skinOutline);
-      PixelGFX.pset(ctx, nx + 4, ny, PAL.skinOutline);
+      PixelGFX.pset(ctx, nx - 3, ny, PAL.skinDeep);
+      PixelGFX.pset(ctx, nx + 4, ny, PAL.skinDeep);
 
       // Sombreado anatómico del cuello (sombra proyectada bajo la mandíbula y luz frontal)
       PixelGFX.pset(ctx, nx - 2, ny, PAL.skinShadow);
@@ -644,8 +648,8 @@ window.MicroCosmos = window.MicroCosmos || {};
       rightLensY: rightEyeY,
       rightShoulderX: torsoX + 10,
       rightShoulderY: torsoY + 13,
-      shoulderX: torsoX + 25,
-      shoulderY: torsoY + 15,
+      shoulderX: torsoX + 23,
+      shoulderY: torsoY + 14,
       headBaseX,
       headBaseY,
       amazed,
@@ -655,7 +659,7 @@ window.MicroCosmos = window.MicroCosmos || {};
 
   /**
    * Dibuja AMBOS brazos articulados de la investigadora (brazo derecho y brazo izquierdo)
-   * con pliegues de manga en los codos, puños de bata y manos Pixel-Art con dedos definidos.
+   * con proporciones anatómicas compactas (~13-14px por segmento) y manos Pixel-Art.
    */
   function drawScientistBoyArm(ctx, scientistPose, knobPos) {
     const {
@@ -670,26 +674,20 @@ window.MicroCosmos = window.MicroCosmos || {};
     } = scientistPose;
 
     // ==========================================
-    // A. BRAZO DERECHO COMPLETO (Hombro derecho -> Codo -> Antebrazo -> Mano derecha)
-    // En observación estabiliza la base del microscopio sobre la mesada; en el acto final se eleva con asombro.
+    // A. BRAZO DERECHO COMPLETO (proporciones cortas y ergonómicas ~13-14px)
     // ==========================================
-    const rElbowX = Math.round(MathUtil.lerp(rightShoulderX - 8, rightShoulderX - 9, amazed));
-    const rElbowY = Math.round(MathUtil.lerp(rightShoulderY + 21, rightShoulderY + 19, amazed));
+    const rWristX = Math.round(MathUtil.lerp(knobPos.x + 6, headBaseX - 15, amazed));
+    const rWristY = Math.round(MathUtil.lerp(knobPos.y + 19, headBaseY + 26, amazed));
 
-    const rWristX = Math.round(MathUtil.lerp(knobPos.x + 3, headBaseX - 18, amazed));
-    const rWristY = Math.round(MathUtil.lerp(knobPos.y + 21, headBaseY + 29, amazed));
+    const rElbowX = Math.round(MathUtil.lerp((rightShoulderX + rWristX) * 0.5 - 2, rightShoulderX - 7, amazed));
+    const rElbowY = Math.round(MathUtil.lerp(rightShoulderY + 15, rightShoulderY + 15, amazed));
 
-    // 1. Brazo superior derecho (del hombro al codo)
-    drawTailoredArmSegment(ctx, rightShoulderX, rightShoulderY, 4.0, rElbowX, rElbowY, 3.4, false);
+    drawTailoredArmSegment(ctx, rightShoulderX, rightShoulderY, 3.8, rElbowX, rElbowY, 3.2, false);
+    drawTailoredArmSegment(ctx, rElbowX, rElbowY, 3.2, rWristX, rWristY, 2.6, true);
 
-    // 2. Antebrazo derecho (del codo a la muñeca con puño de bata)
-    drawTailoredArmSegment(ctx, rElbowX, rElbowY, 3.4, rWristX, rWristY, 2.8, true);
-
-    // Pliegues del codo derecho
     PixelGFX.line(ctx, rElbowX - 1, rElbowY - 1, rElbowX + 2, rElbowY - 2, PAL.coatShadow);
     PixelGFX.pset(ctx, rElbowX, rElbowY, PAL.coatOutline);
 
-    // 3. Mano derecha Pixel-Art con dedos definidos
     if (amazed > 0.45) {
       ctx.drawImage(handRightAmazedSprite, rWristX - 7, rWristY - 8);
     } else {
@@ -697,26 +695,20 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
 
     // ==========================================
-    // B. BRAZO IZQUIERDO COMPLETO EN PRIMER PLANO (Hombro izquierdo -> Codo -> Antebrazo -> Mano izquierda)
-    // En observación gira la perilla micrométrica; en el acto final se eleva hacia el rostro con asombro.
+    // B. BRAZO IZQUIERDO COMPLETO EN PRIMER PLANO (~13-14px por segmento)
     // ==========================================
-    const wristX = Math.round(MathUtil.lerp(knobPos.x + 7, headBaseX - 6, amazed));
-    const wristY = Math.round(MathUtil.lerp(knobPos.y + 1, headBaseY + 25, amazed));
+    const wristX = Math.round(MathUtil.lerp(knobPos.x + 9, headBaseX - 5, amazed));
+    const wristY = Math.round(MathUtil.lerp(knobPos.y + 1, headBaseY + 24, amazed));
 
-    const elbowX = Math.round(MathUtil.lerp(shoulderX - 6, shoulderX - 4, amazed));
-    const elbowY = Math.round(MathUtil.lerp(shoulderY + 19, shoulderY + 18, amazed));
+    const elbowX = Math.round(MathUtil.lerp((shoulderX + wristX) * 0.5 + 3, shoulderX - 3, amazed));
+    const elbowY = Math.round(MathUtil.lerp(shoulderY + 14, shoulderY + 15, amazed));
 
-    // 1. Brazo superior izquierdo (del hombro al codo)
-    drawTailoredArmSegment(ctx, shoulderX, shoulderY, 4.2, elbowX, elbowY, 3.6, false);
+    drawTailoredArmSegment(ctx, shoulderX, shoulderY, 4.0, elbowX, elbowY, 3.4, false);
+    drawTailoredArmSegment(ctx, elbowX, elbowY, 3.4, wristX, wristY, 2.8, true);
 
-    // 2. Antebrazo izquierdo (del codo a la muñeca con puño de bata)
-    drawTailoredArmSegment(ctx, elbowX, elbowY, 3.6, wristX, wristY, 3.0, true);
-
-    // Pliegues internos del codo izquierdo
     PixelGFX.line(ctx, elbowX - 2, elbowY - 1, elbowX + 1, elbowY - 2, PAL.coatShadow);
     PixelGFX.pset(ctx, elbowX - 1, elbowY, PAL.coatOutline);
 
-    // 3. Mano izquierda Pixel-Art con dedos detallados
     if (amazed > 0.45) {
       ctx.drawImage(handAmazedSprite, wristX - 8, wristY - 9);
     } else {
