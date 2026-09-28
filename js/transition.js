@@ -184,6 +184,14 @@ window.MicroCosmos = window.MicroCosmos || {};
 
   let hudCaptionsEnabled = true;
 
+  const INTRO_CAPTION = {
+    start: 0.0,
+    end: 6.5,
+    code: '00',
+    label: 'CAMPO EXPERIMENTAL Y SEDE CEAF',
+    accent: PAL.ceafGreenLight
+  };
+
   const HUD_CAPTIONS = [
     { start: 0.0, end: 5.6, code: '01', label: 'LABORATORIO DE BIOTECNOLOGÍA', accent: PAL.neonCyan },
     { start: 5.6, end: 8.5, code: '02', label: 'MICROSCOPIO CONFOCAL GFP', accent: PAL.chloroplast },
@@ -197,19 +205,30 @@ window.MicroCosmos = window.MicroCosmos || {};
   ];
 
   function drawScientificHUDCaption(ctx, time) {
-    if (!hudCaptionsEnabled || !PixelGFX.drawText3x5 || time >= 51.6) return;
+    const introDur = ns.INTRO_DURATION || 6.5;
+    if (!hudCaptionsEnabled || !PixelGFX.drawText3x5) return;
 
     let activeCap = null;
-    for (let i = 0; i < HUD_CAPTIONS.length; i++) {
-      if (time >= HUD_CAPTIONS[i].start && time < HUD_CAPTIONS[i].end) {
-        activeCap = HUD_CAPTIONS[i];
-        break;
+    let localTime = time;
+
+    if (time < introDur) {
+      activeCap = INTRO_CAPTION;
+      localTime = time;
+    } else {
+      const storyTime = time - introDur;
+      if (storyTime >= 51.6) return;
+      localTime = storyTime;
+      for (let i = 0; i < HUD_CAPTIONS.length; i++) {
+        if (storyTime >= HUD_CAPTIONS[i].start && storyTime < HUD_CAPTIONS[i].end) {
+          activeCap = HUD_CAPTIONS[i];
+          break;
+        }
       }
     }
     if (!activeCap) return;
 
-    const elapsed = time - activeCap.start;
-    const remaining = activeCap.end - time;
+    const elapsed = localTime - activeCap.start;
+    const remaining = activeCap.end - localTime;
 
     // Entrada y salida suave mediante matriz de Bayer 4x4 en los bordes de cada escena
     const fadeAlpha = Math.min(
@@ -250,7 +269,7 @@ window.MicroCosmos = window.MicroCosmos || {};
       PixelGFX.line(ctx, bx, by + bh - 1, bx + bw - 6, by + bh - 1, '#1e3a5f');
       PixelGFX.rect(ctx, bx, by, 2, bh, activeCap.accent);
 
-      // Código numérico de escena (01..09) + separador + título en tipografía 3x5
+      // Código numérico de escena (00..09) + separador + título en tipografía 3x5
       PixelGFX.drawText3x5(ctx, activeCap.code, bx + 5, by + 4, activeCap.accent, 4);
       PixelGFX.pset(ctx, bx + 15, by + 6, PAL.metalLight);
       PixelGFX.drawText3x5(ctx, visibleLabel, bx + 19, by + 4, PAL.white, 4);
@@ -262,9 +281,37 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
   }
 
-  function renderSceneContent(ctx, time) {
+  function renderSceneContent(ctx, rawTime) {
+    const IntroScene = ns.IntroScene;
     const BiotechFieldScenes = ns.BiotechFieldScenes;
     const LogoScene = ns.LogoScene;
+    const introDur = ns.INTRO_DURATION || 6.5;
+
+    // 0. Escena Inicial (0.0s .. 5.7s): Exterior Edificio CEAF desde el Campo Experimental con viento y águilas chilenas
+    if (IntroScene && rawTime < introDur - 0.8) {
+      IntroScene.render(ctx, rawTime);
+      return;
+    }
+
+    // 0b. Transición Bayer-dither desde el Exterior de la Sede CEAF hacia el Laboratorio de Biotecnología (5.7s .. 6.5s)
+    if (IntroScene && rawTime >= introDur - 0.8 && rawTime < introDur) {
+      LabScene.render(ctx, 0.0);
+      mctx.clearRect(0, 0, WIDTH, HEIGHT);
+      IntroScene.render(mctx, rawTime);
+
+      const p = MathUtil.easeInOutCubic(MathUtil.invLerp(introDur - 0.8, introDur, rawTime));
+      for (let y = 0; y < HEIGHT; y++) {
+        for (let x = 0; x < WIDTH; x++) {
+          if (1.0 - p > MathUtil.bayer(x, y)) {
+            ctx.drawImage(microCanvas, x, y, 1, 1, x, y, 1, 1);
+          }
+        }
+      }
+      return;
+    }
+
+    // Desplazamiento temporal limpio para mantener intactas las curvas internas de las escenas 1 a 10
+    const time = IntroScene ? Math.max(0, rawTime - introDur) : rawTime;
 
     // 1. Fase inicial en el Laboratorio de Biotecnología (0..5.7s) y desenlace de asombro (47.8..51.6s)
     if (time < 5.7 || (time >= 47.8 && time < 51.6)) {
@@ -368,9 +415,13 @@ window.MicroCosmos = window.MicroCosmos || {};
       return;
     }
 
-    // 9. Transición de cierre en bucle hacia la Escena 1 (59.3s .. 60.0s)
+    // 9. Transición de cierre en bucle hacia la Escena Inicial de la Sede CEAF (59.3s .. 60.0s de storyTime)
     if (time >= 59.3 && LogoScene) {
-      LabScene.render(ctx, 0.0);
+      if (IntroScene) {
+        IntroScene.render(ctx, 0.0);
+      } else {
+        LabScene.render(ctx, 0.0);
+      }
       mctx.clearRect(0, 0, WIDTH, HEIGHT);
       LogoScene.render(mctx, time);
 

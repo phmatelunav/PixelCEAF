@@ -23,26 +23,27 @@
     <section id="cinema-ui" class="cinema-ui" aria-label="Controles de reproducción">
       <div class="ui-top-row">
         <div class="act-info">
-          <span id="act-badge" class="act-badge">LABORATORIO</span>
-          <span id="act-title" class="act-title">Biología Molecular de Plantas y Bioinformática</span>
+          <span id="act-badge" class="act-badge">SEDE CEAF</span>
+          <span id="act-title" class="act-title">Campo Experimental y Centro de Estudios Avanzados en Fruticultura</span>
         </div>
 
         <div class="act-shortcuts" role="group" aria-label="Saltar a escena">
-          <button type="button" class="act-pill active" data-jump-time="0" data-end-time="5.6" title="Laboratorio de Biotecnología y Bioinformática">1 · Lab</button>
-          <button type="button" class="act-pill" data-jump-time="5.7" data-end-time="8.5" title="Inmersión en Microscopio Confocal">2 · Lente</button>
-          <button type="button" class="act-pill" data-jump-time="9.0" data-end-time="14.2" title="Raíces de Plantas, Pelos Radiculares y Xilema">3 · Raíces</button>
-          <button type="button" class="act-pill" data-jump-time="15.0" data-end-time="21.0" title="Hongos Micorrícicos (Arbúsculos) y Bacterias">4 · Micorrizas</button>
-          <button type="button" class="act-pill" data-jump-time="21.8" data-end-time="27.4" title="Estomas de Hojas, Cloroplastos e Intercambio Gaseoso">5 · Estomas</button>
-          <button type="button" class="act-pill" data-jump-time="28.5" data-end-time="33.8" title="Trabajo Biotecnológico: Micropipeteo, PCR y Electroforesis">6 · Pipeteo/PCR</button>
-          <button type="button" class="act-pill" data-jump-time="34.4" data-end-time="40.4" title="Invernadero Experimental y Riego en Muestras de Campo">7 · Riego/Campo</button>
-          <button type="button" class="act-pill" data-jump-time="41.0" data-end-time="46.8" title="Estación de Bioinformática y Genómica Computacional">8 · Bioinformática</button>
-          <button type="button" class="act-pill" data-jump-time="47.8" data-end-time="52.0" title="El Descubrimiento de la Investigadora">9 · Asombro</button>
-          <button type="button" class="act-pill" data-jump-time="52.5" data-end-time="60.0" title="Cierre Institucional: CEAF, GORE, CORE y ANID">10 · CEAF</button>
+          <button type="button" class="act-pill active" data-jump-time="0" data-end-time="6.5" title="Exterior Edificio CEAF desde Campo Experimental">0 · Sede CEAF</button>
+          <button type="button" class="act-pill" data-jump-time="6.5" data-end-time="12.1" title="Laboratorio de Biotecnología y Bioinformática">1 · Lab</button>
+          <button type="button" class="act-pill" data-jump-time="12.2" data-end-time="15.0" title="Inmersión en Microscopio Confocal">2 · Lente</button>
+          <button type="button" class="act-pill" data-jump-time="15.5" data-end-time="20.7" title="Raíces de Plantas, Pelos Radiculares y Xilema">3 · Raíces</button>
+          <button type="button" class="act-pill" data-jump-time="21.5" data-end-time="27.5" title="Hongos Micorrícicos (Arbúsculos) y Bacterias">4 · Micorrizas</button>
+          <button type="button" class="act-pill" data-jump-time="28.3" data-end-time="33.9" title="Estomas de Hojas, Cloroplastos e Intercambio Gaseoso">5 · Estomas</button>
+          <button type="button" class="act-pill" data-jump-time="35.0" data-end-time="40.3" title="Trabajo Biotecnológico: Micropipeteo, PCR y Electroforesis">6 · Pipeteo/PCR</button>
+          <button type="button" class="act-pill" data-jump-time="40.9" data-end-time="46.9" title="Invernadero Experimental y Riego en Muestras de Campo">7 · Riego/Campo</button>
+          <button type="button" class="act-pill" data-jump-time="47.5" data-end-time="53.3" title="Estación de Bioinformática y Genómica Computacional">8 · Bioinformática</button>
+          <button type="button" class="act-pill" data-jump-time="54.3" data-end-time="58.5" title="El Descubrimiento de la Investigadora">9 · Asombro</button>
+          <button type="button" class="act-pill" data-jump-time="59.0" data-end-time="66.5" title="Cierre Institucional: CEAF, GORE, CORE y ANID">10 · CEAF</button>
         </div>
 
         <div class="meta-readouts">
-          <span id="zoom-readout" class="zoom-readout">1.0x · Cultivo In Vitro</span>
-          <span id="time-readout">00:00.0 / 00:60.0</span>
+          <span id="zoom-readout" class="zoom-readout">Exterior · Rengo, O'Higgins</span>
+          <span id="time-readout">00:00.0 / 00:66.5</span>
         </div>
       </div>
 
@@ -64,7 +65,7 @@
             class="timeline-scrubber"
             type="range"
             min="0"
-            max="60"
+            max="66.5"
             step="0.05"
             value="0"
             aria-label="Línea de tiempo del cortometraje"
@@ -85,6 +86,7 @@
   <!-- Módulos del motor Pixel-Art y Sintetizador Web Audio API -->
   <script src="js/palette.js"></script>
   <script src="js/sprites.js"></script>
+  <script src="js/introScene.js"></script>
   <script src="js/labScene.js"></script>
   <script src="js/microWorldScene.js"></script>
   <script src="js/biotechFieldScenes.js"></script>

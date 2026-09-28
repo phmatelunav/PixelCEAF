@@ -14,70 +14,77 @@ window.MicroCosmos = window.MicroCosmos || {};
   const ACTS = [
     {
       start: 0.0,
-      end: 5.6,
+      end: 6.5,
+      badge: 'SEDE CEAF',
+      title: 'Campo Experimental y Centro de Estudios Avanzados en Fruticultura',
+      zoomLabel: 'Exterior · Rengo, O\'Higgins'
+    },
+    {
+      start: 6.5,
+      end: 12.1,
       badge: 'LABORATORIO',
       title: 'Biología Molecular de Plantas y Bioinformática',
       zoomLabel: '1.0x · Cultivo In Vitro'
     },
     {
-      start: 5.6,
-      end: 8.5,
+      start: 12.1,
+      end: 15.0,
       badge: 'LENTE ÓPTICO',
       title: 'Inmersión en Microscopio Confocal',
       zoomLabel: '100x · Epifluorescencia GFP'
     },
     {
-      start: 8.5,
-      end: 14.2,
+      start: 15.0,
+      end: 20.7,
       badge: 'RIZOSFERA',
       title: 'Raíces, Pelos Radiculares y Xilema/Floema',
       zoomLabel: '400x · Cilindro Vascular'
     },
     {
-      start: 14.2,
-      end: 21.0,
+      start: 20.7,
+      end: 27.5,
       badge: 'SIMBIOSIS',
       title: 'Hongos Micorrícicos (Arbúsculos) y Bacterias',
       zoomLabel: '800x · Red Micorrícica y PGPR'
     },
     {
-      start: 21.0,
-      end: 27.4,
+      start: 27.5,
+      end: 33.9,
       badge: 'EPIDERMIS FOLIAR',
       title: 'Estomas de Hojas, Cloroplastos e Intercambio Gaseoso',
       zoomLabel: '1000x · Células Oclusivas'
     },
     {
-      start: 27.4,
-      end: 33.8,
+      start: 33.9,
+      end: 40.3,
       badge: 'BIOTECNOLOGÍA',
       title: 'Micropipeteo de Precisión, PCR y Electroforesis de ADN',
       zoomLabel: 'Ensayo · Biología Molecular'
     },
     {
-      start: 33.8,
-      end: 40.4,
+      start: 40.3,
+      end: 46.9,
       badge: 'INVERNADERO Y CAMPO',
       title: 'Riego de Muestras Experimentales, Rizotrón y Sensores',
       zoomLabel: 'Campo · Fenotipado Vegetal'
     },
     {
-      start: 40.4,
-      end: 46.8,
+      start: 46.9,
+      end: 53.3,
       badge: 'BIOINFORMÁTICA',
       title: 'Alineamiento Genómico, Heatmap RNA-seq y Proteína 3D',
       zoomLabel: 'In Silico · Genómica Funcional'
     },
     {
-      start: 46.8,
-      end: 52.0,
+      start: 53.3,
+      end: 58.5,
       badge: 'DESCUBRIMIENTO',
       title: 'El Asombro de la Investigadora',
       zoomLabel: '1.0x · Hallazgo Integral'
     },
     {
-      start: 52.0,
-      end: 60.0,
+      start: 58.5,
+      end: 66.5,
       badge: 'CIERRE INSTITUCIONAL',
       title: 'CEAF · GORE · CORE · ANID — Región de O\'Higgins',
       zoomLabel: 'CEAF · Fruticultura Avanzada'

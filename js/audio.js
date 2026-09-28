@@ -231,8 +231,9 @@ window.MicroCosmos = window.MicroCosmos || {};
   // Dividimos los 32.0s en pasos rítmicos de 0.20s (160 pasos por bucle = 150 BPM subdivisión corchea)
   const STEP_DURATION = 0.20;
 
-  // Escalas y progresiones por escena (notas MIDI):
-  // 1. Lab Biotech (0.0s .. 5.6s): Cmaj9 / Am9 limpio, científico y luminoso
+  // 0. Campo Experimental y Sede CEAF (0.0s .. 6.5s): Gmaj9 / Cmaj9 abierto, campestre y luminoso
+  const INTRO_FIELD_ARP = [55, 59, 62, 67, 71, 74, 71, 67, 60, 64, 67, 71, 76, 74, 71, 67];
+  // 1. Lab Biotech (0.0s .. 5.6s storyTime): Cmaj9 / Am9 limpio, científico y luminoso
   const LAB_ARP = [60, 64, 67, 71, 74, 71, 67, 64, 57, 60, 64, 69, 72, 69, 64, 60];
   // 3. Raíces y Xilema (8.5s .. 14.2s): Em9 / G6 orgánico y profundo (flujo de savia)
   const ROOTS_ARP = [52, 59, 62, 64, 67, 71, 67, 64, 55, 59, 62, 67, 69, 71, 67, 62];
@@ -249,9 +250,71 @@ window.MicroCosmos = window.MicroCosmos || {};
   // 9. Descubrimiento Investigadora (46.8s .. 52.0s): Cadencia cálida Fmaj7 -> G6 -> Cmaj9
   const OUTRO_ARP = [65, 69, 72, 76, 67, 71, 74, 79, 60, 64, 67, 71, 72, 76, 79, 84];
 
-  function triggerStepEvents(step, time) {
+  function triggerStepEvents(rawStep, rawTime) {
+    const introDur = ns.INTRO_DURATION || 6.5;
+
     // ------------------------------------------------------------------
-    // CAPÍTULO 1: LABORATORIO BLANCO DE BIOTECNOLOGÍA (0.0s .. 5.6s)
+    // CAPÍTULO 0: EXTERIOR EDIFICIO CEAF Y CAMPO EXPERIMENTAL (0.0s .. 6.5s)
+    // Brisa en plantas frutales y planeo de pequeñas águilas chilenas
+    // ------------------------------------------------------------------
+    if (ns.IntroScene && rawTime < introDur) {
+      const note = INTRO_FIELD_ARP[rawStep % INTRO_FIELD_ARP.length];
+      playNote({
+        midi: note,
+        duration: 0.22,
+        type: 'triangle',
+        volume: 0.11,
+        filterFreq: 2400
+      });
+
+      if (rawStep % 4 === 0) {
+        playNote({
+          midi: (rawStep % 16 < 8) ? 43 : 48, // G2 / C3
+          duration: 0.55,
+          type: 'sine',
+          volume: 0.15,
+          sendDelay: false
+        });
+      }
+
+      // Brisa suave del viento meciendo las plantas del campo experimental
+      if (rawStep % 6 === 2) {
+        playSweepFX({
+          startFreq: 340 + (rawStep % 3) * 60,
+          endFreq: 580 + (rawStep % 4) * 70,
+          duration: 0.32,
+          type: 'sine',
+          volume: 0.038,
+          sendDelay: true
+        });
+      }
+
+      // Canto lejano de pequeñas águilas chilenas (peucos / aguiluchos) planeando sobre CEAF
+      if (rawStep === 6 || rawStep === 19) {
+        playSweepFX({
+          startFreq: 2150,
+          endFreq: 1480,
+          duration: 0.26,
+          type: 'sine',
+          volume: 0.055,
+          sendDelay: true
+        });
+        playFMChime({
+          midi: rawStep === 6 ? 86 : 88,
+          duration: 0.28,
+          modRatio: 2.0,
+          modIndex: 55,
+          volume: 0.05
+        });
+      }
+      return;
+    }
+
+    const time = ns.IntroScene ? Math.max(0, rawTime - introDur) : rawTime;
+    const step = Math.floor(time / STEP_DURATION);
+
+    // ------------------------------------------------------------------
+    // CAPÍTULO 1: LABORATORIO BLANCO DE BIOTECNOLOGÍA (0.0s .. 5.6s storyTime)
     // ------------------------------------------------------------------
     if (time < 5.6) {
       const note = LAB_ARP[step % LAB_ARP.length];
@@ -779,62 +842,72 @@ window.MicroCosmos = window.MicroCosmos || {};
 
     // 1. Modular el Pad Continuo según la escena actual
     if (ambientPadFilter && ambientPadGain && ambientPadOsc1 && ambientPadOsc2) {
+      const introDur = ns.INTRO_DURATION || 6.5;
       let targetFilter = 350;
       let targetGain = 0.035;
       let rootMidi = 48; // C3
       let fifthMidi = 55; // G3
 
-      if (time < 5.6 || (time >= 46.8 && time < 52.0)) {
-        targetFilter = 320;
-        targetGain = 0.025;
-        rootMidi = 48;
-        fifthMidi = 55;
-      } else if (time >= 52.0) {
-        // Cierre Institucional: Pad cálido y luminoso en Do Mayor 9
-        targetFilter = 480;
-        targetGain = 0.032;
-        rootMidi = 48; // C3
-        fifthMidi = 55; // G3
-      } else if (time >= 5.6 && time < 8.5) {
-        const z = MathUtil.invLerp(5.6, 8.5, time);
-        targetFilter = 320 + z * 950;
-        targetGain = 0.045;
-        rootMidi = 48;
-        fifthMidi = 57;
-      } else if (time >= 8.5 && time < 14.2) {
-        targetFilter = 420 + Math.sin(time * 2.5) * 110;
-        targetGain = 0.045;
-        rootMidi = 40; // E2
-        fifthMidi = 47; // B2
-      } else if (time >= 14.2 && time < 21.0) {
-        targetFilter = 680 + Math.sin(time * 3.0) * 180;
-        targetGain = 0.048;
-        rootMidi = 41; // F2
-        fifthMidi = 48; // C3
-      } else if (time >= 21.0 && time < 27.4) {
-        const stomaOpen = MathUtil.clamp(0.25 + 0.75 * (0.5 + 0.5 * Math.sin((time - 21.0) * 1.6)), 0.15, 1.0);
-        targetFilter = 380 + stomaOpen * 1100;
-        targetGain = 0.035 + stomaOpen * 0.03;
-        rootMidi = 48; // C3
-        fifthMidi = 55; // G3
-      } else if (time >= 27.4 && time < 33.8) {
-        // Escena 6: Biotecnología en Laboratorio (Re mayor / Si menor)
-        targetFilter = 520;
-        targetGain = 0.035;
-        rootMidi = 50; // D3
-        fifthMidi = 57; // A3
-      } else if (time >= 33.8 && time < 40.4) {
-        // Escena 7: Invernadero y Riego (Sol mayor luminoso)
-        targetFilter = 750;
-        targetGain = 0.042;
+      if (ns.IntroScene && time < introDur) {
+        // Escena Inicial: Exterior Sede CEAF y Campo Experimental (Sol mayor / Do mayor con ondulación de viento)
+        targetFilter = 560 + Math.sin(time * 1.9) * 140;
+        targetGain = 0.034;
         rootMidi = 43; // G2
         fifthMidi = 50; // D3
-      } else if (time >= 40.4 && time < 46.8) {
-        // Escena 8: Bioinformática (La menor 11)
-        targetFilter = 620;
-        targetGain = 0.038;
-        rootMidi = 45; // A2
-        fifthMidi = 52; // E3
+      } else {
+        const storyTime = ns.IntroScene ? Math.max(0, time - introDur) : time;
+        if (storyTime < 5.6 || (storyTime >= 46.8 && storyTime < 52.0)) {
+          targetFilter = 320;
+          targetGain = 0.025;
+          rootMidi = 48;
+          fifthMidi = 55;
+        } else if (storyTime >= 52.0) {
+          // Cierre Institucional: Pad cálido y luminoso en Do Mayor 9
+          targetFilter = 480;
+          targetGain = 0.032;
+          rootMidi = 48; // C3
+          fifthMidi = 55; // G3
+        } else if (storyTime >= 5.6 && storyTime < 8.5) {
+          const z = MathUtil.invLerp(5.6, 8.5, storyTime);
+          targetFilter = 320 + z * 950;
+          targetGain = 0.045;
+          rootMidi = 48;
+          fifthMidi = 57;
+        } else if (storyTime >= 8.5 && storyTime < 14.2) {
+          targetFilter = 420 + Math.sin(storyTime * 2.5) * 110;
+          targetGain = 0.045;
+          rootMidi = 40; // E2
+          fifthMidi = 47; // B2
+        } else if (storyTime >= 14.2 && storyTime < 21.0) {
+          targetFilter = 680 + Math.sin(storyTime * 3.0) * 180;
+          targetGain = 0.048;
+          rootMidi = 41; // F2
+          fifthMidi = 48; // C3
+        } else if (storyTime >= 21.0 && storyTime < 27.4) {
+          const stomaOpen = MathUtil.clamp(0.25 + 0.75 * (0.5 + 0.5 * Math.sin((storyTime - 21.0) * 1.6)), 0.15, 1.0);
+          targetFilter = 380 + stomaOpen * 1100;
+          targetGain = 0.035 + stomaOpen * 0.03;
+          rootMidi = 48; // C3
+          fifthMidi = 55; // G3
+        } else if (storyTime >= 27.4 && storyTime < 33.8) {
+          // Escena 6: Biotecnología en Laboratorio (Re mayor / Si menor)
+          targetFilter = 520;
+          targetGain = 0.035;
+          rootMidi = 50; // D3
+          fifthMidi = 57; // A3
+        } else if (storyTime >= 33.8 && storyTime < 40.4) {
+          // Escena 7: Invernadero y Riego (Sol mayor luminoso)
+          targetFilter = 750;
+          targetGain = 0.042;
+          rootMidi = 43; // G2
+          fifthMidi = 50; // D3
+        } else if (storyTime >= 40.4 && storyTime < 46.8) {
+          // Escena 8: Bioinformática (La menor 11)
+          targetFilter = 620;
+          targetGain = 0.038;
+          rootMidi = 45; // A2
+          fifthMidi = 52; // E3
+        }
       }
 
       ambientPadOsc1.frequency.setTargetAtTime(mtof(rootMidi), now, 0.12);
