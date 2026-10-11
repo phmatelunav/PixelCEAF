@@ -1,0 +1,6 @@
+# Media and exports
+*.mp4
+*.wav
+Claude outputs/
+.DS_Store
+Thumbs.db

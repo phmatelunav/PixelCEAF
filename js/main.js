@@ -111,8 +111,8 @@ window.MicroCosmos = window.MicroCosmos || {};
     const canvas = document.getElementById('stage');
     if (!canvas) return;
 
-    canvas.width = WIDTH;
-    canvas.height = HEIGHT;
+    canvas.width = ns.CANVAS_WIDTH || 960;
+    canvas.height = ns.CANVAS_HEIGHT || 540;
 
     const ctx = canvas.getContext('2d', { alpha: false });
     ctx.imageSmoothingEnabled = false;

@@ -13,8 +13,8 @@ window.MicroCosmos = window.MicroCosmos || {};
   const { WIDTH, HEIGHT, PAL, PixelGFX, MathUtil, LabScene, MicroWorldScene } = ns;
 
   const microCanvas = document.createElement('canvas');
-  microCanvas.width = WIDTH;
-  microCanvas.height = HEIGHT;
+  microCanvas.width = ns.CANVAS_WIDTH || 960;
+  microCanvas.height = ns.CANVAS_HEIGHT || 540;
   const mctx = microCanvas.getContext('2d', { willReadFrequently: true });
   mctx.imageSmoothingEnabled = false;
 
@@ -60,7 +60,7 @@ window.MicroCosmos = window.MicroCosmos || {};
             if (dist > innerSafeR) {
               const factor = ((dist - innerSafeR) / (maxDiag - innerSafeR)) * hudAlpha;
               if (factor > MathUtil.bayer(px, py)) {
-                ctx.fillRect(px, py, 1, 1);
+                PixelGFX.pset(ctx, px, py, PAL.void);
               }
             }
           }
@@ -156,25 +156,28 @@ window.MicroCosmos = window.MicroCosmos || {};
   }
 
   function drawCircularMaskedMicroWorld(ctx, cx, cy, r) {
-    const icx = Math.round(cx);
-    const icy = Math.round(cy);
-    const ir = Math.round(r);
+    const S = ns.SCALE || 3;
+    const icx = Math.round(cx * S);
+    const icy = Math.round(cy * S);
+    const ir = Math.round(r * S);
+    const cW = ns.CANVAS_WIDTH || 960;
+    const cH = ns.CANVAS_HEIGHT || 540;
     if (ir <= 0) return;
 
-    if (ir >= 186) {
+    if (ir >= cW * 0.6) {
       ctx.drawImage(microCanvas, 0, 0);
       return;
     }
 
     const r2 = ir * ir;
     const yMin = Math.max(0, icy - ir);
-    const yMax = Math.min(HEIGHT - 1, icy + ir);
+    const yMax = Math.min(cH - 1, icy + ir);
 
     for (let py = yMin; py <= yMax; py++) {
       const dy = py - icy;
       const span = Math.floor(Math.sqrt(Math.max(0, r2 - dy * dy)));
       const xStart = Math.max(0, icx - span);
-      const xEnd = Math.min(WIDTH - 1, icx + span);
+      const xEnd = Math.min(cW - 1, icx + span);
       const rowWidth = xEnd - xStart + 1;
       if (rowWidth > 0) {
         ctx.drawImage(microCanvas, xStart, py, rowWidth, 1, xStart, py, rowWidth, 1);
@@ -257,8 +260,7 @@ window.MicroCosmos = window.MicroCosmos || {};
         const edgeFade = isRightTail ? (bx + bw - px) / 8 : 1.0;
         const threshold = (!isRightTail && fadeAlpha > 0.85) ? 1.1 : fadeAlpha * edgeFade;
         if (threshold > MathUtil.bayer(px, py)) {
-          ctx.fillStyle = '#070e1e';
-          ctx.fillRect(px, py, 1, 1);
+          PixelGFX.pset(ctx, px, py, '#070e1e');
         }
       }
     }

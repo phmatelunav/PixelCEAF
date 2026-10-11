@@ -12,6 +12,11 @@ window.MicroCosmos = window.MicroCosmos || {};
 
   ns.WIDTH = 320;
   ns.HEIGHT = 180;
+  ns.BASE_WIDTH = 320;
+  ns.BASE_HEIGHT = 180;
+  ns.CANVAS_WIDTH = 960;
+  ns.CANVAS_HEIGHT = 540;
+  ns.SCALE = 3;
   ns.LOOP_DURATION = 60.0;
 
   const PAL = {
@@ -252,15 +257,15 @@ window.MicroCosmos = window.MicroCosmos || {};
   };
 
 
-  // Umbrales Bayer 4x4 precalculados para todo el lienzo y lienzo auxiliar reutilizable
+  // Umbrales Bayer 4x4 precalculados para todo el lienzo nativo (960x540) y lienzo auxiliar reutilizable
   let revealThresholds = null;
   let revealScratch = null;
   let revealScratchCtx = null;
 
   function ensureRevealBuffers() {
-    if (revealThresholds) return;
-    const w = ns.WIDTH;
-    const h = ns.HEIGHT;
+    const w = ns.CANVAS_WIDTH || 960;
+    const h = ns.CANVAS_HEIGHT || 540;
+    if (revealThresholds && revealScratch && revealScratch.width === w && revealScratch.height === h) return;
     revealThresholds = new Float32Array(w * h);
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
@@ -275,42 +280,89 @@ window.MicroCosmos = window.MicroCosmos || {};
   }
 
   const PixelGFX = {
+    /**
+     * Dibuja un píxel escalado (3x3 en 960x540) en las coordenadas base (320x180)
+     */
     pset(ctx, x, y, color) {
-      const ix = x | 0;
-      const iy = y | 0;
-      if (ix < 0 || ix >= ns.WIDTH || iy < 0 || iy >= ns.HEIGHT) return;
+      const S = ns.SCALE || 3;
+      const ix = Math.round(x * S);
+      const iy = Math.round(y * S);
+      const cW = ns.CANVAS_WIDTH || 960;
+      const cH = ns.CANVAS_HEIGHT || 540;
+      if (ix < 0 || ix >= cW || iy < 0 || iy >= cH) return;
+      if (color) ctx.fillStyle = color;
+      ctx.fillRect(ix, iy, S, S);
+    },
+
+    /**
+     * Dibuja un píxel de precisión nativa 1:1 en el lienzo 960x540 (para micro-detalles y cabello fino)
+     */
+    finePset(ctx, fx, fy, color) {
+      const ix = fx | 0;
+      const iy = fy | 0;
+      const cW = ns.CANVAS_WIDTH || 960;
+      const cH = ns.CANVAS_HEIGHT || 540;
+      if (ix < 0 || ix >= cW || iy < 0 || iy >= cH) return;
       if (color) ctx.fillStyle = color;
       ctx.fillRect(ix, iy, 1, 1);
     },
 
     rect(ctx, x, y, w, h, color) {
-      const ix = Math.round(x);
-      const iy = Math.round(y);
-      const iw = Math.round(w);
-      const ih = Math.round(h);
+      const S = ns.SCALE || 3;
+      const ix = Math.round(x * S);
+      const iy = Math.round(y * S);
+      const iw = Math.round(w * S);
+      const ih = Math.round(h * S);
       if (iw <= 0 || ih <= 0) return;
       if (color) ctx.fillStyle = color;
       ctx.fillRect(ix, iy, iw, ih);
     },
 
-    rectOutline(ctx, x, y, w, h, color) {
-      const ix = Math.round(x);
-      const iy = Math.round(y);
-      const iw = Math.round(w);
-      const ih = Math.round(h);
+    fineRect(ctx, fx, fy, fw, fh, color) {
+      const ix = Math.round(fx);
+      const iy = Math.round(fy);
+      const iw = Math.round(fw);
+      const ih = Math.round(fh);
       if (iw <= 0 || ih <= 0) return;
       if (color) ctx.fillStyle = color;
-      ctx.fillRect(ix, iy, iw, 1);
-      ctx.fillRect(ix, iy + ih - 1, iw, 1);
-      ctx.fillRect(ix, iy, 1, ih);
-      ctx.fillRect(ix + iw - 1, iy, 1, ih);
+      ctx.fillRect(ix, iy, iw, ih);
     },
 
-    line(ctx, x0, y0, x1, y1, color) {
-      let ix0 = Math.round(x0);
-      let iy0 = Math.round(y0);
-      const ix1 = Math.round(x1);
-      const iy1 = Math.round(y1);
+    rectOutline(ctx, x, y, w, h, color, borderW = (ns.SCALE || 3)) {
+      const S = ns.SCALE || 3;
+      const ix = Math.round(x * S);
+      const iy = Math.round(y * S);
+      const iw = Math.round(w * S);
+      const ih = Math.round(h * S);
+      if (iw <= 0 || ih <= 0) return;
+      if (color) ctx.fillStyle = color;
+      ctx.fillRect(ix, iy, iw, borderW);
+      ctx.fillRect(ix, iy + ih - borderW, iw, borderW);
+      ctx.fillRect(ix, iy, borderW, ih);
+      ctx.fillRect(ix + iw - borderW, iy, borderW, ih);
+    },
+
+    fineRectOutline(ctx, fx, fy, fw, fh, color, borderW = 1) {
+      const ix = Math.round(fx);
+      const iy = Math.round(fy);
+      const iw = Math.round(fw);
+      const ih = Math.round(fh);
+      if (iw <= 0 || ih <= 0) return;
+      if (color) ctx.fillStyle = color;
+      ctx.fillRect(ix, iy, iw, borderW);
+      ctx.fillRect(ix, iy + ih - borderW, iw, borderW);
+      ctx.fillRect(ix, iy, borderW, ih);
+      ctx.fillRect(ix + iw - borderW, iy, borderW, ih);
+    },
+
+    line(ctx, x0, y0, x1, y1, color, lineWidth = (ns.SCALE || 3)) {
+      const S = ns.SCALE || 3;
+      let ix0 = Math.round(x0 * S);
+      let iy0 = Math.round(y0 * S);
+      const ix1 = Math.round(x1 * S);
+      const iy1 = Math.round(y1 * S);
+      const cW = ns.CANVAS_WIDTH || 960;
+      const cH = ns.CANVAS_HEIGHT || 540;
 
       const dx = Math.abs(ix1 - ix0);
       const dy = -Math.abs(iy1 - iy0);
@@ -321,7 +373,40 @@ window.MicroCosmos = window.MicroCosmos || {};
       if (color) ctx.fillStyle = color;
 
       while (true) {
-        if (ix0 >= 0 && ix0 < ns.WIDTH && iy0 >= 0 && iy0 < ns.HEIGHT) {
+        if (ix0 >= 0 && ix0 < cW && iy0 >= 0 && iy0 < cH) {
+          ctx.fillRect(ix0, iy0, lineWidth, lineWidth);
+        }
+        if (ix0 === ix1 && iy0 === iy1) break;
+        const e2 = 2 * err;
+        if (e2 >= dy) {
+          err += dy;
+          ix0 += sx;
+        }
+        if (e2 <= dx) {
+          err += dx;
+          iy0 += sy;
+        }
+      }
+    },
+
+    fineLine(ctx, fx0, fy0, fx1, fy1, color) {
+      let ix0 = Math.round(fx0);
+      let iy0 = Math.round(fy0);
+      const ix1 = Math.round(fx1);
+      const iy1 = Math.round(fy1);
+      const cW = ns.CANVAS_WIDTH || 960;
+      const cH = ns.CANVAS_HEIGHT || 540;
+
+      const dx = Math.abs(ix1 - ix0);
+      const dy = -Math.abs(iy1 - iy0);
+      const sx = ix0 < ix1 ? 1 : -1;
+      const sy = iy0 < iy1 ? 1 : -1;
+      let err = dx + dy;
+
+      if (color) ctx.fillStyle = color;
+
+      while (true) {
+        if (ix0 >= 0 && ix0 < cW && iy0 >= 0 && iy0 < cH) {
           ctx.fillRect(ix0, iy0, 1, 1);
         }
         if (ix0 === ix1 && iy0 === iy1) break;
@@ -338,21 +423,48 @@ window.MicroCosmos = window.MicroCosmos || {};
     },
 
     circleFill(ctx, cx, cy, r, color) {
-      const icx = Math.round(cx);
-      const icy = Math.round(cy);
-      const ir = Math.round(r);
+      const S = ns.SCALE || 3;
+      const icx = Math.round(cx * S);
+      const icy = Math.round(cy * S);
+      const ir = Math.round(r * S);
+      const cW = ns.CANVAS_WIDTH || 960;
+      const cH = ns.CANVAS_HEIGHT || 540;
       if (ir <= 0) {
-        if (ir === 0) PixelGFX.pset(ctx, icx, icy, color);
+        if (ir === 0) PixelGFX.pset(ctx, cx, cy, color);
         return;
       }
       if (color) ctx.fillStyle = color;
       const r2 = ir * ir + ir * 0.4;
       for (let dy = -ir; dy <= ir; dy++) {
         const py = icy + dy;
-        if (py < 0 || py >= ns.HEIGHT) continue;
+        if (py < 0 || py >= cH) continue;
         const dxMax = Math.floor(Math.sqrt(Math.max(0, r2 - dy * dy)));
         const xStart = Math.max(0, icx - dxMax);
-        const xEnd = Math.min(ns.WIDTH - 1, icx + dxMax);
+        const xEnd = Math.min(cW - 1, icx + dxMax);
+        if (xEnd >= xStart) {
+          ctx.fillRect(xStart, py, xEnd - xStart + 1, 1);
+        }
+      }
+    },
+
+    fineCircleFill(ctx, fcx, fcy, fr, color) {
+      const icx = Math.round(fcx);
+      const icy = Math.round(fcy);
+      const ir = Math.round(fr);
+      const cW = ns.CANVAS_WIDTH || 960;
+      const cH = ns.CANVAS_HEIGHT || 540;
+      if (ir <= 0) {
+        if (ir === 0) PixelGFX.finePset(ctx, icx, icy, color);
+        return;
+      }
+      if (color) ctx.fillStyle = color;
+      const r2 = ir * ir + ir * 0.4;
+      for (let dy = -ir; dy <= ir; dy++) {
+        const py = icy + dy;
+        if (py < 0 || py >= cH) continue;
+        const dxMax = Math.floor(Math.sqrt(Math.max(0, r2 - dy * dy)));
+        const xStart = Math.max(0, icx - dxMax);
+        const xEnd = Math.min(cW - 1, icx + dxMax);
         if (xEnd >= xStart) {
           ctx.fillRect(xStart, py, xEnd - xStart + 1, 1);
         }
@@ -360,29 +472,55 @@ window.MicroCosmos = window.MicroCosmos || {};
     },
 
     ellipseFill(ctx, cx, cy, rx, ry, color) {
-      const icx = Math.round(cx);
-      const icy = Math.round(cy);
-      const irx = Math.round(rx);
-      const iry = Math.round(ry);
+      const S = ns.SCALE || 3;
+      const icx = Math.round(cx * S);
+      const icy = Math.round(cy * S);
+      const irx = Math.round(rx * S);
+      const iry = Math.round(ry * S);
+      const cW = ns.CANVAS_WIDTH || 960;
+      const cH = ns.CANVAS_HEIGHT || 540;
       if (irx <= 0 || iry <= 0) return;
       if (color) ctx.fillStyle = color;
       for (let dy = -iry; dy <= iry; dy++) {
         const py = icy + dy;
-        if (py < 0 || py >= ns.HEIGHT) continue;
+        if (py < 0 || py >= cH) continue;
         const ny = dy / (iry + 0.25);
         const span = Math.floor(irx * Math.sqrt(Math.max(0, 1 - ny * ny)));
         const xStart = Math.max(0, icx - span);
-        const xEnd = Math.min(ns.WIDTH - 1, icx + span);
+        const xEnd = Math.min(cW - 1, icx + span);
         if (xEnd >= xStart) {
           ctx.fillRect(xStart, py, xEnd - xStart + 1, 1);
         }
       }
     },
 
-    circleOutline(ctx, cx, cy, r, color) {
-      const icx = Math.round(cx);
-      const icy = Math.round(cy);
-      const ir = Math.round(r);
+    fineEllipseFill(ctx, fcx, fcy, frx, fry, color) {
+      const icx = Math.round(fcx);
+      const icy = Math.round(fcy);
+      const irx = Math.round(frx);
+      const iry = Math.round(fry);
+      const cW = ns.CANVAS_WIDTH || 960;
+      const cH = ns.CANVAS_HEIGHT || 540;
+      if (irx <= 0 || iry <= 0) return;
+      if (color) ctx.fillStyle = color;
+      for (let dy = -iry; dy <= iry; dy++) {
+        const py = icy + dy;
+        if (py < 0 || py >= cH) continue;
+        const ny = dy / (iry + 0.25);
+        const span = Math.floor(irx * Math.sqrt(Math.max(0, 1 - ny * ny)));
+        const xStart = Math.max(0, icx - span);
+        const xEnd = Math.min(cW - 1, icx + span);
+        if (xEnd >= xStart) {
+          ctx.fillRect(xStart, py, xEnd - xStart + 1, 1);
+        }
+      }
+    },
+
+    circleOutline(ctx, cx, cy, r, color, thickness = (ns.SCALE || 3)) {
+      const S = ns.SCALE || 3;
+      const icx = Math.round(cx * S);
+      const icy = Math.round(cy * S);
+      const ir = Math.round(r * S);
       if (ir <= 0) return;
       if (color) ctx.fillStyle = color;
 
@@ -390,6 +528,34 @@ window.MicroCosmos = window.MicroCosmos || {};
       let y = 0;
       let err = 1 - x;
 
+      while (x >= y) {
+        ctx.fillRect(icx + x, icy + y, thickness, thickness);
+        ctx.fillRect(icx + y, icy + x, thickness, thickness);
+        ctx.fillRect(icx - y, icy + x, thickness, thickness);
+        ctx.fillRect(icx - x, icy + y, thickness, thickness);
+        ctx.fillRect(icx - x, icy - y, thickness, thickness);
+        ctx.fillRect(icx - y, icy - x, thickness, thickness);
+        ctx.fillRect(icx + y, icy - x, thickness, thickness);
+        ctx.fillRect(icx + x, icy - y, thickness, thickness);
+        y++;
+        if (err < 0) {
+          err += 2 * y + 1;
+        } else {
+          x--;
+          err += 2 * (y - x + 1);
+        }
+      }
+    },
+
+    fineCircleOutline(ctx, fcx, fcy, fr, color) {
+      const icx = Math.round(fcx);
+      const icy = Math.round(fcy);
+      const ir = Math.round(fr);
+      if (ir <= 0) return;
+      if (color) ctx.fillStyle = color;
+      let x = ir;
+      let y = 0;
+      let err = 1 - x;
       while (x >= y) {
         ctx.fillRect(icx + x, icy + y, 1, 1);
         ctx.fillRect(icx + y, icy + x, 1, 1);
@@ -410,23 +576,40 @@ window.MicroCosmos = window.MicroCosmos || {};
     },
 
     /**
+     * Dibuja un sprite compilado escalado a coordenadas de composición base
+     */
+    drawSprite(ctx, sprite, x, y) {
+      if (!sprite) return;
+      ctx.drawImage(sprite, Math.round(x * (ns.SCALE || 3)), Math.round(y * (ns.SCALE || 3)));
+    },
+
+    /**
+     * Dibuja un sprite compilado a coordenadas nativas 1:1 en el lienzo 960x540
+     */
+    fineDrawSprite(ctx, sprite, fx, fy) {
+      if (!sprite) return;
+      ctx.drawImage(sprite, Math.round(fx), Math.round(fy));
+    },
+
+    /**
      * Revela `srcCanvas` sobre `ctx` con tramado Bayer 4x4 en una sola pasada (ImageData).
-     * `limit` es un numero 0..1 (nivel de revelado uniforme) o una funcion (x, y) => 0..1.
-     * Un pixel se copia cuando limit > umbral Bayer(x, y); equivale al bucle clasico de
-     * drawImage 1x1 por pixel, pero ~100x mas rapido.
+     * `limit` es un número 0..1 o una función (x, y) => 0..1 en coordenadas base (0..320, 0..180).
      */
     ditherReveal(ctx, srcCanvas, limit) {
       ensureRevealBuffers();
-      const w = ns.WIDTH;
-      const h = ns.HEIGHT;
+      const w = ns.CANVAS_WIDTH || 960;
+      const h = ns.CANVAS_HEIGHT || 540;
+      const S = ns.SCALE || 3;
       const img = srcCanvas.getContext('2d').getImageData(0, 0, w, h);
       const data = img.data;
       const thr = revealThresholds;
       if (typeof limit === 'function') {
         for (let y = 0; y < h; y++) {
+          const vy = y / S;
           for (let x = 0; x < w; x++) {
+            const vx = x / S;
             const i = y * w + x;
-            if (!(limit(x, y) > thr[i])) data[i * 4 + 3] = 0;
+            if (!(limit(vx, vy) > thr[i])) data[i * 4 + 3] = 0;
           }
         }
       } else {
@@ -439,19 +622,23 @@ window.MicroCosmos = window.MicroCosmos || {};
     },
 
     ditherGlow(ctx, cx, cy, rInner, rOuter, color, intensity = 1.0) {
-      const icx = Math.round(cx);
-      const icy = Math.round(cy);
-      const irOut = Math.ceil(rOuter);
+      const S = ns.SCALE || 3;
+      const icx = Math.round(cx * S);
+      const icy = Math.round(cy * S);
+      const irIn = rInner * S;
+      const irOut = Math.ceil(rOuter * S);
+      const cW = ns.CANVAS_WIDTH || 960;
+      const cH = ns.CANVAS_HEIGHT || 540;
       if (irOut <= 0 || intensity <= 0.02) return;
 
       ctx.fillStyle = color;
       const yMin = Math.max(0, icy - irOut);
-      const yMax = Math.min(ns.HEIGHT - 1, icy + irOut);
+      const yMax = Math.min(cH - 1, icy + irOut);
       const xMin = Math.max(0, icx - irOut);
-      const xMax = Math.min(ns.WIDTH - 1, icx + irOut);
+      const xMax = Math.min(cW - 1, icx + irOut);
 
-      const rOutSq = rOuter * rOuter;
-      const rIn = Math.max(0, rInner);
+      const rOutSq = irOut * irOut;
+      const rIn = Math.max(0, irIn);
 
       for (let py = yMin; py <= yMax; py++) {
         const dy = py - icy;
@@ -459,12 +646,12 @@ window.MicroCosmos = window.MicroCosmos || {};
         const bayerRow = BAYER_4X4[py & 3];
         for (let px = xMin; px <= xMax; px++) {
           const dx = px - icx;
-          const dSq = dx * dx + dySq;
-          if (dSq > rOutSq) continue;
-          const dist = Math.sqrt(dSq);
+          const distSq = dx * dx + dySq;
+          if (distSq > rOutSq) continue;
+          const dist = Math.sqrt(distSq);
           let alpha = 1.0;
           if (dist > rIn) {
-            alpha = 1.0 - (dist - rIn) / Math.max(0.001, rOuter - rIn);
+            alpha = 1.0 - (dist - rIn) / Math.max(0.001, irOut - rIn);
           }
           alpha *= intensity;
           if (alpha > (bayerRow[px & 3] + 0.5) / 16.0) {
@@ -475,10 +662,11 @@ window.MicroCosmos = window.MicroCosmos || {};
     },
 
     ditherGradientV(ctx, x, y, w, h, topColor, bottomColor) {
-      const ix = Math.round(x);
-      const iy = Math.round(y);
-      const iw = Math.round(w);
-      const ih = Math.round(h);
+      const S = ns.SCALE || 3;
+      const ix = Math.round(x * S);
+      const iy = Math.round(y * S);
+      const iw = Math.round(w * S);
+      const ih = Math.round(h * S);
       ctx.fillStyle = topColor;
       ctx.fillRect(ix, iy, iw, ih);
       ctx.fillStyle = bottomColor;
@@ -494,50 +682,49 @@ window.MicroCosmos = window.MicroCosmos || {};
     },
 
     sparkle(ctx, cx, cy, radius, color, coreColor = PAL.white) {
-      const ix = Math.round(cx);
-      const iy = Math.round(cy);
-      const r = Math.round(radius);
+      const S = ns.SCALE || 3;
+      const icx = Math.round(cx * S);
+      const icy = Math.round(cy * S);
+      const r = Math.round(radius * S);
       if (r <= 0) {
-        PixelGFX.pset(ctx, ix, iy, color);
+        PixelGFX.finePset(ctx, icx, icy, color);
         return;
       }
       ctx.fillStyle = color;
-      ctx.fillRect(ix - r, iy, r * 2 + 1, 1);
-      ctx.fillRect(ix, iy - r, 1, r * 2 + 1);
-      if (r >= 2) {
-        ctx.fillRect(ix - 1, iy - 1, 3, 3);
+      ctx.fillRect(icx - r, icy - Math.floor(S / 2), r * 2 + S, S);
+      ctx.fillRect(icx - Math.floor(S / 2), icy - r, S, r * 2 + S);
+      if (r >= 2 * S) {
+        ctx.fillRect(icx - S, icy - S, S * 2, S * 2);
       }
       ctx.fillStyle = coreColor;
-      ctx.fillRect(ix, iy, 1, 1);
+      ctx.fillRect(icx, icy, S, S);
     },
 
     /**
      * Dibuja un rectángulo con esquinas biseladas de 1px y relieve interior (ideal para células vegetales y paneles)
      */
     bevelRect(ctx, x, y, w, h, fillCol, lightCol, darkCol, outlineCol) {
-      const ix = Math.round(x);
-      const iy = Math.round(y);
       const iw = Math.round(w);
       const ih = Math.round(h);
       if (iw <= 2 || ih <= 2) {
-        PixelGFX.rect(ctx, ix, iy, iw, ih, fillCol);
+        PixelGFX.rect(ctx, x, y, w, h, fillCol);
         return;
       }
       // Relleno interior sin las 4 esquinas extremas
-      PixelGFX.rect(ctx, ix + 1, iy + 1, iw - 2, ih - 2, fillCol);
+      PixelGFX.rect(ctx, x + 1, y + 1, iw - 2, ih - 2, fillCol);
       if (outlineCol) {
-        PixelGFX.line(ctx, ix + 1, iy, ix + iw - 2, iy, outlineCol);
-        PixelGFX.line(ctx, ix + 1, iy + ih - 1, ix + iw - 2, iy + ih - 1, outlineCol);
-        PixelGFX.line(ctx, ix, iy + 1, ix, iy + ih - 2, outlineCol);
-        PixelGFX.line(ctx, ix + iw - 1, iy + 1, ix + iw - 1, iy + ih - 2, outlineCol);
+        PixelGFX.line(ctx, x + 1, y, x + iw - 2, y, outlineCol);
+        PixelGFX.line(ctx, x + 1, y + ih - 1, x + iw - 2, y + ih - 1, outlineCol);
+        PixelGFX.line(ctx, x, y + 1, x, y + ih - 2, outlineCol);
+        PixelGFX.line(ctx, x + iw - 1, y + 1, x + iw - 1, y + ih - 2, outlineCol);
       }
       if (lightCol && iw > 4 && ih > 4) {
-        PixelGFX.line(ctx, ix + 1, iy + 1, ix + iw - 3, iy + 1, lightCol);
-        PixelGFX.line(ctx, ix + 1, iy + 1, ix + 1, iy + ih - 3, lightCol);
+        PixelGFX.line(ctx, x + 1, y + 1, x + iw - 3, y + 1, lightCol);
+        PixelGFX.line(ctx, x + 1, y + 1, x + 1, y + ih - 3, lightCol);
       }
       if (darkCol && iw > 4 && ih > 4) {
-        PixelGFX.line(ctx, ix + 2, iy + ih - 2, ix + iw - 2, iy + ih - 2, darkCol);
-        PixelGFX.line(ctx, ix + iw - 2, iy + 2, ix + iw - 2, iy + ih - 2, darkCol);
+        PixelGFX.line(ctx, x + 2, y + ih - 2, x + iw - 2, y + ih - 2, darkCol);
+        PixelGFX.line(ctx, x + iw - 2, y + 2, x + iw - 2, y + ih - 2, darkCol);
       }
     },
 
@@ -629,7 +816,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     /**
      * Dibuja mobiliario clínico de laboratorio (cajoneras, puertas de gabinete, tiradores y zócalo) bajo la mesada
      */
-    drawLabCabinets(ctx, yTop, yBottom, startX = 0, endX = ns.WIDTH) {
+    drawLabCabinets(ctx, yTop, yBottom, startX = 0, endX = (ns.BASE_WIDTH || 320)) {
       const h = yBottom - yTop;
       if (h <= 6) return;
 

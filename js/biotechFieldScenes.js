@@ -15,14 +15,14 @@ window.MicroCosmos = window.MicroCosmos || {};
 
   // Lienzos fuera de pantalla para transiciones suaves Bayer-dither entre escenas
   const sceneCanvasA = document.createElement('canvas');
-  sceneCanvasA.width = WIDTH;
-  sceneCanvasA.height = HEIGHT;
+  sceneCanvasA.width = ns.CANVAS_WIDTH || 960;
+  sceneCanvasA.height = ns.CANVAS_HEIGHT || 540;
   const ctxA = sceneCanvasA.getContext('2d', { willReadFrequently: true });
   ctxA.imageSmoothingEnabled = false;
 
   const sceneCanvasB = document.createElement('canvas');
-  sceneCanvasB.width = WIDTH;
-  sceneCanvasB.height = HEIGHT;
+  sceneCanvasB.width = ns.CANVAS_WIDTH || 960;
+  sceneCanvasB.height = ns.CANVAS_HEIGHT || 540;
   const ctxB = sceneCanvasB.getContext('2d', { willReadFrequently: true });
   ctxB.imageSmoothingEnabled = false;
 
@@ -250,9 +250,10 @@ window.MicroCosmos = window.MicroCosmos || {};
     const winH = 56;
     const sakuraPalette = [PAL.sakuraShadow, PAL.sakuraDeep, PAL.sakuraMid, PAL.sakuraLight, PAL.sakuraWhite];
     PixelGFX.rect(ctx, winX - 2, winY - 2, winW + 4, winH + 4, PAL.windowFrameDark);
+    const S = ns.SCALE || 3;
     ctx.save();
     ctx.beginPath();
-    ctx.rect(winX, winY, winW, winH);
+    ctx.rect(winX * S, winY * S, winW * S, winH * S);
     ctx.clip();
     PixelGFX.rect(ctx, winX, winY, winW, 24, PAL.skyTop);
     PixelGFX.rect(ctx, winX, winY + 24, winW, 14, PAL.skyMid);
@@ -297,7 +298,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     for (let i = 0; i < 3; i++) {
       const fx = shelfX + 6 + i * 23;
       const fy = shelfY - 21;
-      ctx.drawImage(Sprites.inVitroPlant, fx, fy);
+      PixelGFX.drawSprite(ctx, Sprites.inVitroPlant, fx, fy);
       if ((Math.floor(globalTime * 4) + i) % 3 === 0) {
         PixelGFX.pset(ctx, fx + 7, fy + 15, PAL.neonCyanLight);
       }
@@ -459,9 +460,9 @@ window.MicroCosmos = window.MicroCosmos || {};
     // Torso con bata blanca (recortado en deskY)
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, WIDTH, deskY);
+    ctx.rect(0, 0, WIDTH * S, deskY * S);
     ctx.clip();
-    ctx.drawImage(Sprites.scientistTorso || createFallbackTorso(), torsoX, torsoY);
+    PixelGFX.drawSprite(ctx, Sprites.scientistTorso || createFallbackTorso(), torsoX, torsoY);
     ctx.restore();
 
     // Cuello anatómico continuo
@@ -484,7 +485,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
 
     // Cabeza y rostro mirando hacia la gradilla de pocillos
-    ctx.drawImage(Sprites.scientistHead || createFallbackHead(), headBaseX - 11, headBaseY - 4);
+    PixelGFX.drawSprite(ctx, Sprites.scientistHead || createFallbackHead(), headBaseX - 11, headBaseY - 4);
     // Boca concentrada / sonriente
     PixelGFX.line(ctx, headBaseX - 5, headBaseY + 16, headBaseX - 2, headBaseY + 16, PAL.lips);
     PixelGFX.pset(ctx, headBaseX - 1, headBaseY + 15, PAL.lips);
@@ -581,7 +582,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
 
     // Mano derecha enguantada estabilizando el lateral de la gradilla
-    ctx.drawImage(glovedRackHandSprite, rWristX - 8, rWristY - 4);
+    PixelGFX.drawSprite(ctx, glovedRackHandSprite, rWristX - 8, rWristY - 4);
 
     // B) Brazo Izquierdo (en primer plano, compacto ~11-13px por segmento, sosteniendo la micropipeta)
     // En glovedPipetteHandSprite (16x22), la punta ('C') está exactamente en (col=8, row=16).
@@ -611,7 +612,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.pset(ctx, tipX, spriteY - 2 + plungerPress, PAL.neonPinkLight);
 
     // Mano enguantada + Micropipeta alineada al píxel con el centro del tubo (tipX, tipY)
-    ctx.drawImage(glovedPipetteHandSprite, spriteX, spriteY);
+    PixelGFX.drawSprite(ctx, glovedPipetteHandSprite, spriteX, spriteY);
     // Reactivo cian visible en la punta translúcida antes de dispensar
     if (cyclePhase < 0.50) {
       PixelGFX.pset(ctx, tipX, tipY - 1, PAL.neonCyanLight);
@@ -704,8 +705,7 @@ window.MicroCosmos = window.MicroCosmos || {};
         const relX = px - shift;
         if ((relX > 20 && relX < 64) || (relX > 95 && relX < 145)) {
           if (MathUtil.bayer(px, py) < 0.22) {
-            ctx.fillStyle = PAL.sunbeamCore;
-            ctx.fillRect(px, py, 1, 1);
+            PixelGFX.pset(ctx, px, py, PAL.sunbeamCore);
           }
         }
       }
@@ -930,7 +930,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
 
     // Torso de la investigadora
-    ctx.drawImage(Sprites.scientistTorso || createFallbackTorso(), torsoX, torsoY);
+    PixelGFX.drawSprite(ctx, Sprites.scientistTorso || createFallbackTorso(), torsoX, torsoY);
 
     // Cuello anatómico continuo
     const neckTopX = headBaseX + 2;
@@ -952,7 +952,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
 
     // Cabeza y sonrisa cálida cuidando las plantas
-    ctx.drawImage(Sprites.scientistHead || createFallbackHead(), headBaseX - 11, headBaseY - 4);
+    PixelGFX.drawSprite(ctx, Sprites.scientistHead || createFallbackHead(), headBaseX - 11, headBaseY - 4);
     PixelGFX.line(ctx, headBaseX - 5, headBaseY + 16, headBaseX - 1, headBaseY + 16, PAL.lips);
     PixelGFX.pset(ctx, headBaseX, headBaseY + 15, PAL.lips);
 
@@ -1024,7 +1024,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.ellipseFill(ctx, spoutTipX - 2, spoutTipY, 3, 4, PAL.brassMid);
     PixelGFX.line(ctx, spoutTipX - 4, spoutTipY - 3, spoutTipX - 4, spoutTipY + 3, PAL.brassLight);
 
-    ctx.drawImage(handWateringSideSprite, rWristX - 8, rWristY - 4);
+    PixelGFX.drawSprite(ctx, handWateringSideSprite, rWristX - 8, rWristY - 4);
 
     // B) Brazo Izquierdo en primer plano (compacto ~13.5px por segmento, sujetando el asa superior)
     const lShoulderX = torsoX + 23; // 252
@@ -1036,7 +1036,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     drawArmSegment(ctx, lShoulderX, lShoulderY, 4.0, lElbowX, lElbowY, 3.4, false);
     drawArmSegment(ctx, lElbowX, lElbowY, 3.4, lWristX, lWristY, 2.8, true);
     PixelGFX.line(ctx, lElbowX - 2, lElbowY - 1, lElbowX + 1, lElbowY - 2, PAL.coatShadow);
-    ctx.drawImage(handWateringTopSprite, lWristX - 9, lWristY - 4);
+    PixelGFX.drawSprite(ctx, handWateringTopSprite, lWristX - 9, lWristY - 4);
 
     // 8. Chorros Parabólicos de Gotas de Agua y Salpicaduras sobre las Muestras
     const numStreams = 5;
@@ -1275,11 +1275,12 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
 
     // Torso recortado limpiamente por el borde del escritorio (deskY = 122)
+    const S = ns.SCALE || 3;
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, WIDTH, deskY);
+    ctx.rect(0, 0, WIDTH * S, deskY * S);
     ctx.clip();
-    ctx.drawImage(Sprites.scientistTorso || createFallbackTorso(), torsoX, torsoY);
+    PixelGFX.drawSprite(ctx, Sprites.scientistTorso || createFallbackTorso(), torsoX, torsoY);
     ctx.restore();
 
     // Cuello anatómico continuo
@@ -1302,7 +1303,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
 
     // Cabeza y expresión
-    ctx.drawImage(Sprites.scientistHead || createFallbackHead(), headBaseX - 11, headBaseY - 4);
+    PixelGFX.drawSprite(ctx, Sprites.scientistHead || createFallbackHead(), headBaseX - 11, headBaseY - 4);
     if (isPointing) {
       PixelGFX.rect(ctx, headBaseX - 5, headBaseY + 15, 5, 3, PAL.lips);
       PixelGFX.rect(ctx, headBaseX - 4, headBaseY + 15, 3, 1, PAL.white);
@@ -1391,10 +1392,10 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, rElbowX - 1, rElbowY - 1, rElbowX + 2, rElbowY - 2, PAL.coatShadow);
 
     if (pointT > 0.5) {
-      ctx.drawImage(handPointScreenSprite, rWristX - 11, rWristY - 5);
+      PixelGFX.drawSprite(ctx, handPointScreenSprite, rWristX - 11, rWristY - 5);
     } else {
       const rightTypeFrame = (Math.floor(localTime * 9) % 2 === 0) ? handTypingSpriteA : handTypingSpriteB;
-      ctx.drawImage(rightTypeFrame, rWristX - 10, rWristY - 4);
+      PixelGFX.drawSprite(ctx, rightTypeFrame, rWristX - 10, rWristY - 4);
     }
 
     // B) Brazo Izquierdo en primer plano (tecleando en la mitad derecha del teclado con proporción natural)
@@ -1411,7 +1412,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, lElbowX - 2, lElbowY - 1, lElbowX + 1, lElbowY - 2, PAL.coatShadow);
 
     const leftTypeFrame = (Math.floor(localTime * 11) % 2 === 0) ? handTypingSpriteB : handTypingSpriteA;
-    ctx.drawImage(leftTypeFrame, lWristX - 10, lWristY - 4);
+    PixelGFX.drawSprite(ctx, leftTypeFrame, lWristX - 10, lWristY - 4);
   }
 
   /**

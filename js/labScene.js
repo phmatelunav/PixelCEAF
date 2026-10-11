@@ -14,8 +14,8 @@ window.MicroCosmos = window.MicroCosmos || {};
   const { WIDTH, HEIGHT, PAL, PixelGFX, MathUtil, Sprites } = ns;
 
   const sceneCanvas = document.createElement('canvas');
-  sceneCanvas.width = WIDTH;
-  sceneCanvas.height = HEIGHT;
+  sceneCanvas.width = ns.CANVAS_WIDTH || 960;
+  sceneCanvas.height = ns.CANVAS_HEIGHT || 540;
   const sctx = sceneCanvas.getContext('2d');
   sctx.imageSmoothingEnabled = false;
 
@@ -62,9 +62,10 @@ window.MicroCosmos = window.MicroCosmos || {};
     const ww = 132;
     const wh = 84;
 
+    const S = ns.SCALE || 3;
     ctx.save();
     ctx.beginPath();
-    ctx.rect(wx, wy, ww, wh);
+    ctx.rect(wx * S, wy * S, ww * S, wh * S);
     ctx.clip();
 
     // A) Cielo diurno despejado y luminoso
@@ -222,7 +223,7 @@ window.MicroCosmos = window.MicroCosmos || {};
         const intensity = (1.0 - t * 0.55) * 0.32;
         for (let px = startX; px < endX; px++) {
           if (intensity > MathUtil.bayer(px, py)) {
-            ctx.fillRect(px, py, 1, 1);
+            PixelGFX.pset(ctx, px, py);
           }
         }
       }
@@ -284,7 +285,7 @@ window.MicroCosmos = window.MicroCosmos || {};
       if (idx === 0) {
         for (let p = 0; p < 3; p++) {
           const px = cx + 6 + p * 20;
-          ctx.drawImage(Sprites.chamberPlant, px, sy - 12);
+          PixelGFX.drawSprite(ctx, Sprites.chamberPlant, px, sy - 12);
         }
       } else if (idx === 1) {
         for (let d = 0; d < 2; d++) {
@@ -363,7 +364,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, pcrX + 7, sy - 8, pcrX + 10, sy - 5, PAL.chloroplast);
 
     // Planta in vitro a la derecha del estante
-    ctx.drawImage(Sprites.chamberPlant, sx + 70, sy - 12);
+    PixelGFX.drawSprite(ctx, Sprites.chamberPlant, sx + 70, sy - 12);
 
     // B) Monitor Mural de Bioinformática y Genómica Vegetal (x: 230..310, y: 42..78)
     const mx = 230;
@@ -432,11 +433,11 @@ window.MicroCosmos = window.MicroCosmos || {};
     // 1. Cultivo In Vitro y Tubos Eppendorf (Izquierda)
     const plantVesselX = 18;
     const plantVesselY = deskY - 21;
-    ctx.drawImage(Sprites.inVitroPlant, plantVesselX, plantVesselY);
+    PixelGFX.drawSprite(ctx, Sprites.inVitroPlant, plantVesselX, plantVesselY);
     PixelGFX.rect(ctx, plantVesselX, deskY - 1, 16, 2, PAL.metalLight);
     PixelGFX.rect(ctx, plantVesselX + 3, deskY - 1, 10, 1, PAL.neonCyan);
 
-    ctx.drawImage(Sprites.eppendorfRack, 40, deskY - 9);
+    PixelGFX.drawSprite(ctx, Sprites.eppendorfRack, 40, deskY - 9);
 
     // 2. Computadora Izquierda (Carcasa Blanca/Plata con Cromatograma de ADN)
     const mon1X = 68;
@@ -627,11 +628,16 @@ window.MicroCosmos = window.MicroCosmos || {};
       ctx.drawImage(sceneCanvas, 0, 0);
     } else {
       const z = state.cameraZoom;
-      const viewW = WIDTH / z;
-      const viewH = HEIGHT / z;
-      const sx = MathUtil.clamp(focusX - viewW * 0.5, 0, WIDTH - viewW);
-      const sy = MathUtil.clamp(focusY - viewH * 0.5, 0, HEIGHT - viewH);
-      ctx.drawImage(sceneCanvas, sx, sy, viewW, viewH, 0, 0, WIDTH, HEIGHT);
+      const S = ns.SCALE || 3;
+      const cW = sceneCanvas.width;
+      const cH = sceneCanvas.height;
+      const viewW = cW / z;
+      const viewH = cH / z;
+      const focusXFine = focusX * S;
+      const focusYFine = focusY * S;
+      const sx = MathUtil.clamp(focusXFine - viewW * 0.5, 0, cW - viewW);
+      const sy = MathUtil.clamp(focusYFine - viewH * 0.5, 0, cH - viewH);
+      ctx.drawImage(sceneCanvas, sx, sy, viewW, viewH, 0, 0, cW, cH);
     }
     ctx.restore();
 

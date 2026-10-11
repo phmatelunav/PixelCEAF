@@ -12,16 +12,17 @@ window.MicroCosmos = window.MicroCosmos || {};
 
   const { PAL, PixelGFX, MathUtil } = ns;
 
-  function compileSprite(rows, paletteMap) {
-    const h = rows.length;
-    const w = rows.reduce((max, r) => Math.max(max, r.length), 0);
+  function compileSprite(rows, paletteMap, scale = (ns.SCALE || 3)) {
+    const s = scale;
+    const h = rows.length * s;
+    const w = rows.reduce((max, r) => Math.max(max, r.length), 0) * s;
     const canvas = document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
 
-    for (let y = 0; y < h; y++) {
+    for (let y = 0; y < rows.length; y++) {
       const row = rows[y];
       for (let x = 0; x < row.length; x++) {
         const ch = row[x];
@@ -29,7 +30,7 @@ window.MicroCosmos = window.MicroCosmos || {};
         const color = paletteMap[ch];
         if (color) {
           ctx.fillStyle = color;
-          ctx.fillRect(x, y, 1, 1);
+          ctx.fillRect(x * s, y * s, s, s);
         }
       }
     }
@@ -223,29 +224,29 @@ window.MicroCosmos = window.MicroCosmos || {};
   // Cabeza y Rostro esculpido en Pixel-Art (28x23):
   // Proporción esbelta y ovalada, perfil 3/4 delicado, nariz estilizada y mentón definido (sin efecto esférico)
   const scientistHeadSprite = compileSprite([
-    '........HHHHHHHHHHHH........',
-    '......HHHHhhhhhhhhhhHH......',
-    '.....HHHhhhllvvvvllhhhHH....',
-    '....HHHhhllvvssssvvllhhHH...',
-    '...HHHhhllvvhhhhhhvvllhhHH..',
-    '...HHhhlhhHHHHHHHHhhhlhhhH..',
-    '..HHhhlhHHHHkkffkkHHHHlhhH..',
-    '..HHhlhHHHkkffffffkkHHHlhh..',
-    '..HHhhHHkkffffffffffkkHHhh..',
-    '..HHhHHkffffffffffffffkHH...',
-    '..HHHqkffffffffffffffffkHH..',
-    '...oqkfffffffffffffffffkHH..',
+    '.........HHHHHHHHHH.........',
+    '.......HHHhhhhhhhhhHH.......',
+    '......HHHhhllvvvvllhhHH.....',
+    '.....HHHhhllvvssssvvllhH....',
+    '.....HHhhlvvvvhhhhvvllhHH...',
+    '....HHHhhlhhHHHHHHHHhhllhH..',
+    '...HHHhhlhHHHHkkffkkHHHHlhH.',
+    '..HHHhlhHHHkkffffffkkHHHlhH.',
+    '..HHhhHHkkffffffffffkkHHlhH.',
+    '..HHhHHkffffffffffffffkHlhH.',
+    '...HqkfffffffffffffffffkHH..',
     '....qkfffffffffffffffffkHH..',
     '...oqkfffffffffffffffffkHH..',
     '..oqfffffffffffffffffffkH...',
-    '..oqffffffffffffffffHkkCo...',
+    '..oqfffffffffffffffffHkCo...',
     '...oqkffffffffffffffkHkdo...',
-    '....qkfffbbbffffffffkHoo....',
-    '.....qkffbbbfffffffkkdo.....',
+    '....qkffffbbbfffffffkHoo....',
+    '.....qkffbbbffffffkkdo.....',
     '.....oqkfffffffffkkdo.......',
     '......oqkfffffffkkdo........',
-    '........oqqkkkkdoo..........',
-    '..........ooooo.............'
+    '.......oqqkfffkkdoo.........',
+    '.........oqqkdoo............',
+    '...........ooo..............'
   ], SCIENTIST_MAP);
 
   // Mano Izquierda Pixel-Art 1: Sujetando y girando la perilla del microscopio (14x10)
@@ -528,7 +529,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     // ==========================================
     // 2. TORSO PIXEL-ART CON BATA ENTALLADA, BLUSA Y GAFETE
     // ==========================================
-    ctx.drawImage(scientistTorsoSprite, torsoX, torsoY);
+    PixelGFX.drawSprite(ctx, scientistTorsoSprite, torsoX, torsoY);
 
     // ==========================================
     // 2B. CUELLO ANATÓMICO PIXEL-ART (CONEXIÓN CONTINUA MENTÓN-COLLAR)
@@ -559,7 +560,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     // ==========================================
     // 3. CABEZA Y ROSTRO FEMENINO ESCULPIDO PÍXEL A PÍXEL
     // ==========================================
-    ctx.drawImage(scientistHeadSprite, headBaseX - 11, headBaseY - 4);
+    PixelGFX.drawSprite(ctx, scientistHeadSprite, headBaseX - 11, headBaseY - 4);
 
     // Labios femeninos y sonrisa expresiva según el estado de la animación
     const mouthX = headBaseX - 5;
@@ -700,9 +701,9 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.pset(ctx, rElbowX, rElbowY, PAL.coatOutline);
 
     if (amazed > 0.45) {
-      ctx.drawImage(handRightAmazedSprite, rWristX - 7, rWristY - 8);
+      PixelGFX.drawSprite(ctx, handRightAmazedSprite, rWristX - 7, rWristY - 8);
     } else {
-      ctx.drawImage(handRightBenchSprite, rWristX - 11, rWristY - 4);
+      PixelGFX.drawSprite(ctx, handRightBenchSprite, rWristX - 11, rWristY - 4);
     }
 
     // ==========================================
@@ -721,10 +722,10 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.pset(ctx, elbowX - 1, elbowY, PAL.coatOutline);
 
     if (amazed > 0.45) {
-      ctx.drawImage(handAmazedSprite, wristX - 8, wristY - 9);
+      PixelGFX.drawSprite(ctx, handAmazedSprite, wristX - 8, wristY - 9);
     } else {
       const fingerFrame = (Math.floor(time * 5) % 2 === 0) ? handKnobSpriteA : handKnobSpriteB;
-      ctx.drawImage(fingerFrame, wristX - 11, wristY - 5);
+      PixelGFX.drawSprite(ctx, fingerFrame, wristX - 11, wristY - 5);
     }
   }
 

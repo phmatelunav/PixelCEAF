@@ -435,9 +435,10 @@ window.MicroCosmos = window.MicroCosmos || {};
 
       // Dibujar la esfera naranja con sombreado volumétrico de 3 tonos y brillo especular rodante
       if (fruitX - rx < WIDTH - 5) {
+        const S = ns.SCALE || 3;
         ctx.save();
         ctx.beginPath();
-        ctx.rect(6, 6, WIDTH - 12, HEIGHT - 12);
+        ctx.rect(6 * S, 6 * S, (WIDTH - 12) * S, (HEIGHT - 12) * S);
         ctx.clip();
 
         for (let dy = -ry; dy <= ry; dy++) {
@@ -559,7 +560,7 @@ window.MicroCosmos = window.MicroCosmos || {};
   // ==========================================================================
   function drawCORELogo(ctx, baseX, baseY) {
     // 1. Estatua ecuestre en Pixel-Art a la izquierda
-    ctx.drawImage(coreStatueSprite, baseX + 2, baseY);
+    PixelGFX.drawSprite(ctx, coreStatueSprite, baseX + 2, baseY);
     // Espada extendida hacia arriba-izquierda
     PixelGFX.line(ctx, baseX + 12, baseY + 3, baseX + 2, baseY, '#5d665e');
 
@@ -611,7 +612,7 @@ window.MicroCosmos = window.MicroCosmos || {};
 
     // Franja Azul con el Escudo de Chile en Pixel-Art blanco
     PixelGFX.rect(ctx, b1X, logoY, blueW, logoH, PAL.anidBlue);
-    ctx.drawImage(chileCoatSprite, b1X + 2, logoY + 4);
+    PixelGFX.drawSprite(ctx, chileCoatSprite, b1X + 2, logoY + 4);
     // Barrita blanca inferior en la franja azul (clásica del logo de Gobierno de Chile)
     PixelGFX.rect(ctx, b1X + 2, logoY + 39, blueW - 4, 2, PAL.white);
 

@@ -16,14 +16,14 @@ window.MicroCosmos = window.MicroCosmos || {};
 
   // Buffer auxiliar para mezclar suavemente las transiciones entre sub-escenas del microscopio
   const subCanvasA = document.createElement('canvas');
-  subCanvasA.width = WIDTH;
-  subCanvasA.height = HEIGHT;
+  subCanvasA.width = ns.CANVAS_WIDTH || 960;
+  subCanvasA.height = ns.CANVAS_HEIGHT || 540;
   const ctxA = subCanvasA.getContext('2d', { willReadFrequently: true });
   ctxA.imageSmoothingEnabled = false;
 
   const subCanvasB = document.createElement('canvas');
-  subCanvasB.width = WIDTH;
-  subCanvasB.height = HEIGHT;
+  subCanvasB.width = ns.CANVAS_WIDTH || 960;
+  subCanvasB.height = ns.CANVAS_HEIGHT || 540;
   const ctxB = subCanvasB.getContext('2d', { willReadFrequently: true });
   ctxB.imageSmoothingEnabled = false;
 
