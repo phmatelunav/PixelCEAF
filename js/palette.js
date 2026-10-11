@@ -28,6 +28,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     benchTop: '#eef3f9',
     benchFront: '#dbe4f0',
     benchShadow: '#c3d1e3',
+    benchEdge: '#9bb0d1',
     benchBase: '#e6edf5',
     cabinetBody: '#dfe9f5',
     cabinetDoor: '#eef4fb',
@@ -83,6 +84,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     lips: '#c94a63',
     coatOutline: '#637899',
     coatShadow: '#9bb0d1',
+    coatDeep: '#9bb0d1',
     coatMid: '#dce8fa',
     coatLight: '#ffffff',
     shirtDark: '#0e4d45',
@@ -249,6 +251,29 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
   };
 
+
+  // Umbrales Bayer 4x4 precalculados para todo el lienzo y lienzo auxiliar reutilizable
+  let revealThresholds = null;
+  let revealScratch = null;
+  let revealScratchCtx = null;
+
+  function ensureRevealBuffers() {
+    if (revealThresholds) return;
+    const w = ns.WIDTH;
+    const h = ns.HEIGHT;
+    revealThresholds = new Float32Array(w * h);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        revealThresholds[y * w + x] = BAYER_4X4[y & 3][x & 3] / 16.0;
+      }
+    }
+    revealScratch = document.createElement('canvas');
+    revealScratch.width = w;
+    revealScratch.height = h;
+    revealScratchCtx = revealScratch.getContext('2d', { willReadFrequently: true });
+    revealScratchCtx.imageSmoothingEnabled = false;
+  }
+
   const PixelGFX = {
     pset(ctx, x, y, color) {
       const ix = x | 0;
@@ -382,6 +407,35 @@ window.MicroCosmos = window.MicroCosmos || {};
           err += 2 * (y - x + 1);
         }
       }
+    },
+
+    /**
+     * Revela `srcCanvas` sobre `ctx` con tramado Bayer 4x4 en una sola pasada (ImageData).
+     * `limit` es un numero 0..1 (nivel de revelado uniforme) o una funcion (x, y) => 0..1.
+     * Un pixel se copia cuando limit > umbral Bayer(x, y); equivale al bucle clasico de
+     * drawImage 1x1 por pixel, pero ~100x mas rapido.
+     */
+    ditherReveal(ctx, srcCanvas, limit) {
+      ensureRevealBuffers();
+      const w = ns.WIDTH;
+      const h = ns.HEIGHT;
+      const img = srcCanvas.getContext('2d').getImageData(0, 0, w, h);
+      const data = img.data;
+      const thr = revealThresholds;
+      if (typeof limit === 'function') {
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const i = y * w + x;
+            if (!(limit(x, y) > thr[i])) data[i * 4 + 3] = 0;
+          }
+        }
+      } else {
+        for (let i = 0; i < w * h; i++) {
+          if (!(limit > thr[i])) data[i * 4 + 3] = 0;
+        }
+      }
+      revealScratchCtx.putImageData(img, 0, 0);
+      ctx.drawImage(revealScratch, 0, 0);
     },
 
     ditherGlow(ctx, cx, cy, rInner, rOuter, color, intensity = 1.0) {

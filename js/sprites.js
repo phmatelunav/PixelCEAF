@@ -220,31 +220,32 @@ window.MicroCosmos = window.MicroCosmos || {};
     '.......OOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
   ], SCIENTIST_MAP);
 
-  // Cabeza y Rostro esculpido en Pixel-Art (28x23) con mechones volumétricos y Sel-Out en mejilla/mandíbula
+  // Cabeza y Rostro esculpido en Pixel-Art (28x23):
+  // Proporción esbelta y ovalada, perfil 3/4 delicado, nariz estilizada y mentón definido (sin efecto esférico)
   const scientistHeadSprite = compileSprite([
-    '.......HHHHHHHHHHHHHH.......',
-    '.....HHHHhhhhhhhhhhHHHH.....',
-    '....HHHhhhllvvvvllhhhHHH....',
-    '...HHHhhllvvssssvvllhhHHH...',
-    '..HHHhhllvvhhhhhhvvllhhHHH..',
-    '..HHhhlhhHHHHHHHHhhhlhhhHH..',
-    '.HHhhlhHHHHkkffkkHHHHlhhhHH.',
-    '.HHhlhHHHkkffffffkkHHHlhhHH.',
-    '.HHhhHHkkffffffffffkkHHhhHH.',
-    '.HHhHHkffffffffffffffkHHhHH.',
-    '..H.qkffffffffffffffffkHHH..',
-    '....qkffffffffffffffffkHHH..',
-    '...oqkffffffffffffffffkHHH..',
-    '..qffffffffffffffffHkdoHH...',
-    '..qkffffffffffffffffHkkdoH..',
-    '...oqkffffffffffffffHkkCo...',
-    '....qkfffffffffffffkHkkdo...',
-    '....qkfffbbbfffffffkHooo....',
-    '.....qkffbbbffffffkkdo......',
+    '........HHHHHHHHHHHH........',
+    '......HHHHhhhhhhhhhhHH......',
+    '.....HHHhhhllvvvvllhhhHH....',
+    '....HHHhhllvvssssvvllhhHH...',
+    '...HHHhhllvvhhhhhhvvllhhHH..',
+    '...HHhhlhhHHHHHHHHhhhlhhhH..',
+    '..HHhhlhHHHHkkffkkHHHHlhhH..',
+    '..HHhlhHHHkkffffffkkHHHlhh..',
+    '..HHhhHHkkffffffffffkkHHhh..',
+    '..HHhHHkffffffffffffffkHH...',
+    '..HHHqkffffffffffffffffkHH..',
+    '...oqkfffffffffffffffffkHH..',
+    '....qkfffffffffffffffffkHH..',
+    '...oqkfffffffffffffffffkHH..',
+    '..oqfffffffffffffffffffkH...',
+    '..oqffffffffffffffffHkkCo...',
+    '...oqkffffffffffffffkHkdo...',
+    '....qkfffbbbffffffffkHoo....',
+    '.....qkffbbbfffffffkkdo.....',
     '.....oqkfffffffffkkdo.......',
     '......oqkfffffffkkdo........',
-    '........oqqkkkkkdoo.........',
-    '..........ooooooo...........'
+    '........oqqkkkkdoo..........',
+    '..........ooooo.............'
   ], SCIENTIST_MAP);
 
   // Mano Izquierda Pixel-Art 1: Sujetando y girando la perilla del microscopio (14x10)

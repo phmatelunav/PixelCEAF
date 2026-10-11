@@ -28,9 +28,13 @@ window.MicroCosmos = window.MicroCosmos || {};
   let ambientPadGain = null;
 
   let isMuted = false;
-  let isUnlocked = true;
   let lastStepIndex = -1;
   let lastTime = 0;
+
+  function userHasInteracted() {
+    const ua = navigator.userActivation;
+    return ua ? ua.hasBeenActive : true;
+  }
 
   // Conversión de nota MIDI a frecuencia en Hz
   function mtof(midi) {
@@ -825,9 +829,10 @@ window.MicroCosmos = window.MicroCosmos || {};
     if (!audioCtx && !isMuted) {
       initAudioGraph();
     }
-    if (!audioCtx || !isUnlocked) return;
+    if (!audioCtx) return;
 
-    if (!isMuted && audioCtx.state === 'suspended') {
+    // Reintentar resume() solo tras una interaccion real del usuario (evita avisos de autoplay en cada fotograma)
+    if (!isMuted && audioCtx.state === 'suspended' && userHasInteracted()) {
       audioCtx.resume().catch(() => {});
     }
 
@@ -938,7 +943,6 @@ window.MicroCosmos = window.MicroCosmos || {};
     if (audioCtx.state === 'suspended') {
       audioCtx.resume().catch(() => {});
     }
-    isUnlocked = true;
     return !isMuted;
   }
 
@@ -946,7 +950,6 @@ window.MicroCosmos = window.MicroCosmos || {};
     if (!audioCtx) {
       initAudioGraph();
     }
-    isUnlocked = true;
     isMuted = !isMuted;
 
     if (!isMuted && audioCtx && audioCtx.state === 'suspended') {
@@ -961,7 +964,8 @@ window.MicroCosmos = window.MicroCosmos || {};
 
   function getStatus() {
     return {
-      isUnlocked,
+      // true cuando el AudioContext ya esta sonando (o aun no existe); false = bloqueado por autoplay
+      isUnlocked: audioCtx ? audioCtx.state === 'running' : true,
       isMuted,
       isActive: !isMuted
     };

@@ -138,6 +138,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     let timelineTime = 0.0;
     let lastFrameTs = performance.now();
     let idleTimer = null;
+    let lastAudioUiSync = 0;
 
     function syncAudioUI() {
       if (!ns.AudioEngine) return;
@@ -148,8 +149,9 @@ window.MicroCosmos = window.MicroCosmos || {};
       if (audioBtn) {
         audioBtn.classList.toggle('audio-on', st.isActive);
       }
-      if (audioBanner && st.isUnlocked) {
-        audioBanner.classList.add('hidden');
+      if (audioBanner) {
+        // Mostrar el aviso mientras el navegador mantenga el audio bloqueado (y no este silenciado)
+        audioBanner.classList.toggle('hidden', st.isUnlocked || st.isMuted);
       }
     }
 
@@ -336,6 +338,11 @@ window.MicroCosmos = window.MicroCosmos || {};
       Transition.renderFrame(ctx, timelineTime);
       ns.AudioEngine?.update(timelineTime, isPlaying && !isScrubbing);
       updateUI(timelineTime);
+
+      if (now - lastAudioUiSync > 250) {
+        lastAudioUiSync = now;
+        syncAudioUI();
+      }
 
       requestAnimationFrame(tick);
     }

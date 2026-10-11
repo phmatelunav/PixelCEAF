@@ -15,7 +15,7 @@ window.MicroCosmos = window.MicroCosmos || {};
   const microCanvas = document.createElement('canvas');
   microCanvas.width = WIDTH;
   microCanvas.height = HEIGHT;
-  const mctx = microCanvas.getContext('2d');
+  const mctx = microCanvas.getContext('2d', { willReadFrequently: true });
   mctx.imageSmoothingEnabled = false;
 
   function drawMicroscopeHUD(ctx, time, lensRadius) {
@@ -300,13 +300,7 @@ window.MicroCosmos = window.MicroCosmos || {};
       IntroScene.render(mctx, rawTime);
 
       const p = MathUtil.easeInOutCubic(MathUtil.invLerp(introDur - 0.8, introDur, rawTime));
-      for (let y = 0; y < HEIGHT; y++) {
-        for (let x = 0; x < WIDTH; x++) {
-          if (1.0 - p > MathUtil.bayer(x, y)) {
-            ctx.drawImage(microCanvas, x, y, 1, 1, x, y, 1, 1);
-          }
-        }
-      }
+      PixelGFX.ditherReveal(ctx, microCanvas, 1.0 - p);
       return;
     }
 
@@ -381,13 +375,7 @@ window.MicroCosmos = window.MicroCosmos || {};
         BiotechFieldScenes.render(mctx, time);
 
         const p = MathUtil.easeInOutCubic(MathUtil.invLerp(46.6, 47.8, time));
-        for (let y = 0; y < HEIGHT; y++) {
-          for (let x = 0; x < WIDTH; x++) {
-            if (1.0 - p > MathUtil.bayer(x, y)) {
-              ctx.drawImage(microCanvas, x, y, 1, 1, x, y, 1, 1);
-            }
-          }
-        }
+        PixelGFX.ditherReveal(ctx, microCanvas, 1.0 - p);
       }
       return;
     }
@@ -399,13 +387,7 @@ window.MicroCosmos = window.MicroCosmos || {};
       LabScene.render(mctx, time);
 
       const p = MathUtil.easeInOutCubic(MathUtil.invLerp(51.6, 52.4, time));
-      for (let y = 0; y < HEIGHT; y++) {
-        for (let x = 0; x < WIDTH; x++) {
-          if (1.0 - p > MathUtil.bayer(x, y)) {
-            ctx.drawImage(microCanvas, x, y, 1, 1, x, y, 1, 1);
-          }
-        }
-      }
+      PixelGFX.ditherReveal(ctx, microCanvas, 1.0 - p);
       return;
     }
 
@@ -426,13 +408,7 @@ window.MicroCosmos = window.MicroCosmos || {};
       LogoScene.render(mctx, time);
 
       const p = MathUtil.easeInOutCubic(MathUtil.invLerp(59.3, 60.0, time));
-      for (let y = 0; y < HEIGHT; y++) {
-        for (let x = 0; x < WIDTH; x++) {
-          if (1.0 - p > MathUtil.bayer(x, y)) {
-            ctx.drawImage(microCanvas, x, y, 1, 1, x, y, 1, 1);
-          }
-        }
-      }
+      PixelGFX.ditherReveal(ctx, microCanvas, 1.0 - p);
       return;
     }
 

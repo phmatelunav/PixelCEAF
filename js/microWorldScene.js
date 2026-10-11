@@ -18,13 +18,13 @@ window.MicroCosmos = window.MicroCosmos || {};
   const subCanvasA = document.createElement('canvas');
   subCanvasA.width = WIDTH;
   subCanvasA.height = HEIGHT;
-  const ctxA = subCanvasA.getContext('2d');
+  const ctxA = subCanvasA.getContext('2d', { willReadFrequently: true });
   ctxA.imageSmoothingEnabled = false;
 
   const subCanvasB = document.createElement('canvas');
   subCanvasB.width = WIDTH;
   subCanvasB.height = HEIGHT;
-  const ctxB = subCanvasB.getContext('2d');
+  const ctxB = subCanvasB.getContext('2d', { willReadFrequently: true });
   ctxB.imageSmoothingEnabled = false;
 
   // Partículas del suelo / exudados / moléculas gaseosas
@@ -651,23 +651,12 @@ window.MicroCosmos = window.MicroCosmos || {};
     const maxR = 195;
     const waveR = progress * maxR;
 
-    for (let py = 0; py < HEIGHT; py++) {
+    PixelGFX.ditherReveal(ctx, canvasTo, (px, py) => {
+      const dx = px - cx;
       const dy = py - cy;
-      const distApprox = Math.abs(dy);
-      if (distApprox < waveR - 28) {
-        // Fila completamente dentro de la nueva escena
-        ctx.drawImage(canvasTo, 0, py, WIDTH, 1, 0, py, WIDTH, 1);
-        continue;
-      }
-      for (let px = 0; px < WIDTH; px++) {
-        const dx = px - cx;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        const localT = MathUtil.clamp((waveR - d + 18) / 36, 0, 1);
-        if (localT > MathUtil.bayer(px, py)) {
-          ctx.drawImage(canvasTo, px, py, 1, 1, px, py, 1, 1);
-        }
-      }
-    }
+      const d = Math.sqrt(dx * dx + dy * dy);
+      return MathUtil.clamp((waveR - d + 18) / 36, 0, 1);
+    });
 
     // Anillo de reenfoque del objetivo del microscopio
     if (waveR > 4 && waveR < 180) {

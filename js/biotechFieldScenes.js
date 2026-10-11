@@ -17,13 +17,13 @@ window.MicroCosmos = window.MicroCosmos || {};
   const sceneCanvasA = document.createElement('canvas');
   sceneCanvasA.width = WIDTH;
   sceneCanvasA.height = HEIGHT;
-  const ctxA = sceneCanvasA.getContext('2d');
+  const ctxA = sceneCanvasA.getContext('2d', { willReadFrequently: true });
   ctxA.imageSmoothingEnabled = false;
 
   const sceneCanvasB = document.createElement('canvas');
   sceneCanvasB.width = WIDTH;
   sceneCanvasB.height = HEIGHT;
-  const ctxB = sceneCanvasB.getContext('2d');
+  const ctxB = sceneCanvasB.getContext('2d', { willReadFrequently: true });
   ctxB.imageSmoothingEnabled = false;
 
   // ==========================================================================
@@ -666,6 +666,7 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
 
     // Colinas agrícolas verdes y cerezos exteriores con copas de racimos orgánicos
+    PixelGFX.rect(ctx, 0, 124, WIDTH, 12, PAL.meadowDark); // base del prado: evita huecos bajo las colinas
     PixelGFX.ellipseFill(ctx, 70, 118, 95, 28, PAL.meadowDark);
     PixelGFX.ellipseFill(ctx, 220, 120, 110, 30, PAL.meadowMid);
     const sakuraPalette = [PAL.sakuraShadow, PAL.sakuraDeep, PAL.sakuraMid, PAL.sakuraLight, PAL.sakuraWhite];
@@ -727,6 +728,10 @@ window.MicroCosmos = window.MicroCosmos || {};
         }
       }
     }
+
+    // Piso del invernadero bajo/alrededor del bancal (continúa el piso de la derecha, x >= 214)
+    PixelGFX.rect(ctx, 0, 136, 214, HEIGHT - 136, '#cbd5e1');
+    PixelGFX.rect(ctx, 0, 136, 214, 4, '#94a3b8');
 
     // 4. Bancal Elevado de Muestras de Campo con Ventana de Rizotrón (x = 10 .. 214, y = 108 .. 170)
     const bedX = 10;
@@ -1414,15 +1419,7 @@ window.MicroCosmos = window.MicroCosmos || {};
    */
   function drawBayerTransition(ctx, canvasFrom, canvasTo, progress) {
     ctx.drawImage(canvasFrom, 0, 0);
-    for (let y = 0; y < HEIGHT; y++) {
-      const sweepOffset = (y / HEIGHT) * 0.18;
-      for (let x = 0; x < WIDTH; x++) {
-        const localP = MathUtil.clamp((progress - sweepOffset) / 0.82, 0, 1);
-        if (localP > MathUtil.bayer(x, y)) {
-          ctx.drawImage(canvasTo, x, y, 1, 1, x, y, 1, 1);
-        }
-      }
-    }
+    PixelGFX.ditherReveal(ctx, canvasTo, (x, y) => MathUtil.clamp((progress - (y / HEIGHT) * 0.18) / 0.82, 0, 1));
   }
 
   function createFallbackTorso() {
@@ -1454,14 +1451,14 @@ window.MicroCosmos = window.MicroCosmos || {};
     } else if (time >= 33.3 && time < 34.3) {
       const p = MathUtil.easeInOutCubic(MathUtil.invLerp(33.3, 34.3, time));
       drawBiotechBenchScene(ctxA, time - 27.4, time);
-      drawGreenhouseIrrigationScene(ctxB, Math.max(0, time - 33.3), time);
+      drawGreenhouseIrrigationScene(ctxB, Math.max(0, time - 33.8), time);
       drawBayerTransition(ctx, sceneCanvasA, sceneCanvasB, p);
     } else if (time >= 34.3 && time < 39.9) {
       drawGreenhouseIrrigationScene(ctx, time - 33.8, time);
     } else if (time >= 39.9 && time < 40.9) {
       const p = MathUtil.easeInOutCubic(MathUtil.invLerp(39.9, 40.9, time));
       drawGreenhouseIrrigationScene(ctxA, time - 33.8, time);
-      drawBioinformaticsScene(ctxB, Math.max(0, time - 39.9), time);
+      drawBioinformaticsScene(ctxB, Math.max(0, time - 40.4), time);
       drawBayerTransition(ctx, sceneCanvasA, sceneCanvasB, p);
     } else {
       drawBioinformaticsScene(ctx, time - 40.4, time);
