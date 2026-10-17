@@ -89,24 +89,29 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.ellipseFill(ctx, c2x - 4, wy + 18, 11, 4, PAL.white);
     PixelGFX.ellipseFill(ctx, c2x + 6, wy + 19, 9, 3, PAL.white);
 
-    // B) Cordillera de los Andes (Valle de O'Higgins) en el horizonte lejano
+    // B) Cordillera de los Andes (Valle de O'Higgins) en el horizonte lejano con crestas suaves nativas 960x540
     const horizonY = wy + 54;
     const peaks = [
-      { cx: wx + 18, w: 28, h: 14, col: PAL.andesFar },
-      { cx: wx + 46, w: 34, h: 18, col: PAL.andesMid },
-      { cx: wx + 78, w: 30, h: 15, col: PAL.andesFar },
-      { cx: wx + 108, w: 36, h: 19, col: PAL.andesMid }
+      { cx: wx + 18, w: 28, h: 14, col: PAL.andesFar, shade: '#8a9cb5' },
+      { cx: wx + 46, w: 34, h: 18, col: PAL.andesMid, shade: '#7488a4' },
+      { cx: wx + 78, w: 30, h: 15, col: PAL.andesFar, shade: '#8a9cb5' },
+      { cx: wx + 108, w: 36, h: 19, col: PAL.andesMid, shade: '#7488a4' }
     ];
     for (let p = 0; p < peaks.length; p++) {
       const pk = peaks[p];
-      for (let dy = 0; dy < pk.h; dy++) {
-        const span = Math.round((dy / pk.h) * (pk.w * 0.5));
-        const py = horizonY - pk.h + dy;
-        PixelGFX.rect(ctx, pk.cx - span, py, span * 2 + 1, 1, pk.col);
-        // Cumbre nevada en el tercio superior
-        if (dy < pk.h * 0.38) {
-          const snowSpan = Math.max(1, span - (dy % 2));
-          PixelGFX.rect(ctx, pk.cx - snowSpan, py, snowSpan, 1, PAL.andesSnow);
+      const fcx = pk.cx * S;
+      const fh = pk.h * S;
+      const fw = pk.w * S;
+      const fHorizonY = horizonY * S;
+      for (let fdy = 0; fdy < fh; fdy++) {
+        const span = Math.round((fdy / fh) * (fw * 0.5));
+        const fpy = fHorizonY - fh + fdy;
+        PixelGFX.fineRect(ctx, fcx - span, fpy, span, 1, pk.col);
+        PixelGFX.fineRect(ctx, fcx, fpy, span + 1, 1, pk.shade);
+        // Cumbre nevada con facetas diagonales en el tercio superior
+        if (fdy < fh * 0.42) {
+          const snowSpan = Math.max(1, span - (fdy % 3 === 0 ? 1 : 0));
+          PixelGFX.fineRect(ctx, fcx - snowSpan, fpy, snowSpan + Math.round(snowSpan * 0.35), 1, PAL.andesSnow);
         }
       }
     }
@@ -115,65 +120,67 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.rect(ctx, wx, horizonY, ww, wh - 54, PAL.meadowLight);
     PixelGFX.ditherGradientV(ctx, wx, horizonY + 8, ww, wh - 62, PAL.meadowMid, PAL.meadowDark);
 
-    // Sendero claro entre las dos hileras de cerezos con pétalos caídos en los bordes
-    const vanishX = wx + Math.floor(ww * 0.52);
-    for (let py = horizonY; py < wy + wh; py++) {
-      const t = (py - horizonY) / (wh - 54);
-      const halfPath = Math.round(2 + t * 18);
-      PixelGFX.rect(ctx, vanishX - halfPath, py, halfPath * 2 + 1, 1, PAL.pathLight);
-      PixelGFX.pset(ctx, vanishX - halfPath, py, PAL.pathShade);
-      PixelGFX.pset(ctx, vanishX + halfPath, py, PAL.pathShade);
-      if (py % 3 === 0) {
-        PixelGFX.pset(ctx, vanishX - halfPath - 1, py, PAL.sakuraLight);
-        PixelGFX.pset(ctx, vanishX + halfPath + 1, py, PAL.sakuraMid);
+    // Sendero claro entre las dos hileras de cerezos con bordes suaves nativos y pétalos caídos
+    const vanishX = (wx + ww * 0.52) * S;
+    const fHorY = horizonY * S;
+    const fBotY = (wy + wh) * S;
+    for (let fpy = fHorY; fpy < fBotY; fpy++) {
+      const t = (fpy - fHorY) / (fBotY - fHorY);
+      const halfPath = Math.round((2 + t * 18) * S);
+      PixelGFX.fineRect(ctx, Math.round(vanishX - halfPath), fpy, halfPath * 2 + 1, 1, PAL.pathLight);
+      PixelGFX.fineRect(ctx, Math.round(vanishX - halfPath), fpy, 2, 1, PAL.pathShade);
+      PixelGFX.fineRect(ctx, Math.round(vanishX + halfPath - 1), fpy, 2, 1, PAL.pathShade);
+      if (fpy % 7 === 0) {
+        PixelGFX.fineRect(ctx, Math.round(vanishX - halfPath - 4), fpy, 3, 2, PAL.sakuraLight);
+        PixelGFX.fineRect(ctx, Math.round(vanishX + halfPath + 2), fpy, 3, 2, PAL.sakuraMid);
       }
     }
 
     // C) Hileras de Árboles de Cerezo en Flor (Sakura) con copas multi-racimo y corteza detallada
+    const vX = wx + Math.floor(ww * 0.52);
     const treeRows = [
-      { x: vanishX - 14, baseY: horizonY + 6, trunkH: 10, crownRX: 9, crownRY: 7, swayPhase: 0.2 },
-      { x: vanishX + 14, baseY: horizonY + 6, trunkH: 10, crownRX: 9, crownRY: 7, swayPhase: 1.5 },
-      { x: vanishX - 26, baseY: horizonY + 13, trunkH: 14, crownRX: 12, crownRY: 9, swayPhase: 2.4 },
-      { x: vanishX + 26, baseY: horizonY + 13, trunkH: 14, crownRX: 12, crownRY: 9, swayPhase: 0.8 },
-      { x: vanishX - 42, baseY: horizonY + 21, trunkH: 19, crownRX: 15, crownRY: 11, swayPhase: 3.7 },
-      { x: vanishX + 41, baseY: horizonY + 21, trunkH: 19, crownRX: 15, crownRY: 11, swayPhase: 1.9 },
-      { x: vanishX - 59, baseY: horizonY + 29, trunkH: 25, crownRX: 19, crownRY: 13, swayPhase: 4.5 },
-      { x: vanishX + 58, baseY: horizonY + 29, trunkH: 25, crownRX: 19, crownRY: 13, swayPhase: 2.9 }
+      { x: vX - 14, baseY: horizonY + 6, trunkH: 10, crownRX: 9, crownRY: 7, swayPhase: 0.2 },
+      { x: vX + 14, baseY: horizonY + 6, trunkH: 10, crownRX: 9, crownRY: 7, swayPhase: 1.5 },
+      { x: vX - 26, baseY: horizonY + 13, trunkH: 14, crownRX: 12, crownRY: 9, swayPhase: 2.4 },
+      { x: vX + 26, baseY: horizonY + 13, trunkH: 14, crownRX: 12, crownRY: 9, swayPhase: 0.8 },
+      { x: vX - 42, baseY: horizonY + 21, trunkH: 19, crownRX: 15, crownRY: 11, swayPhase: 3.7 },
+      { x: vX + 41, baseY: horizonY + 21, trunkH: 19, crownRX: 15, crownRY: 11, swayPhase: 1.9 },
+      { x: vX - 59, baseY: horizonY + 29, trunkH: 25, crownRX: 19, crownRY: 13, swayPhase: 4.5 },
+      { x: vX + 58, baseY: horizonY + 29, trunkH: 25, crownRX: 19, crownRY: 13, swayPhase: 2.9 }
     ];
 
     const sakuraColors = [PAL.sakuraShadow, PAL.sakuraDeep, PAL.sakuraMid, PAL.sakuraLight, PAL.sakuraWhite];
 
     for (let i = 0; i < treeRows.length; i++) {
       const tr = treeRows[i];
-      const breeze = Math.round(Math.sin(time * 2.0 + tr.swayPhase) * 1);
+      const breeze = Math.sin(time * 2.0 + tr.swayPhase) * 1.0;
       const crownX = tr.x + breeze;
       const crownY = tr.baseY - tr.trunkH;
 
       // Sombra proyectada y pétalos sobre el césped
       PixelGFX.ellipseFill(ctx, tr.x, tr.baseY + 1, Math.round(tr.crownRX * 0.65), 2, PAL.meadowDark);
-      PixelGFX.pset(ctx, tr.x - 3, tr.baseY + 1, PAL.sakuraLight);
-      PixelGFX.pset(ctx, tr.x + 4, tr.baseY + 2, PAL.sakuraMid);
+      PixelGFX.fineRect(ctx, (tr.x - 3) * S, (tr.baseY + 1) * S, 3, 2, PAL.sakuraLight);
+      PixelGFX.fineRect(ctx, (tr.x + 4) * S, (tr.baseY + 2) * S, 3, 2, PAL.sakuraMid);
 
-      // Tronco con raíces acampanadas, corteza texturizada y ramas secundarias
+      // Tronco con raíces acampanadas, corteza texturizada y ramas secundarias finas
       const trunkW = tr.trunkH > 16 ? 3 : 2;
       PixelGFX.rect(ctx, tr.x - Math.floor(trunkW / 2), crownY + 2, trunkW, tr.trunkH, PAL.trunkBarkDark);
-      PixelGFX.line(ctx, tr.x - Math.floor(trunkW / 2), crownY + 3, tr.x - Math.floor(trunkW / 2), tr.baseY - 1, PAL.trunkLight);
-      PixelGFX.pset(ctx, tr.x - Math.floor(trunkW / 2) - 1, tr.baseY, PAL.trunkDark);
-      PixelGFX.pset(ctx, tr.x + Math.ceil(trunkW / 2), tr.baseY, PAL.trunkBarkDark);
-      PixelGFX.line(ctx, tr.x, crownY + 6, crownX - Math.round(tr.crownRX * 0.4), crownY + 1, PAL.trunkDark);
-      PixelGFX.line(ctx, tr.x, crownY + 5, crownX + Math.round(tr.crownRX * 0.4), crownY + 1, PAL.trunkBarkDark);
+      PixelGFX.fineRect(ctx, (tr.x - Math.floor(trunkW / 2)) * S, (crownY + 3) * S, 2, (tr.trunkH - 3) * S, PAL.trunkLight);
+      PixelGFX.fineLine(ctx, tr.x * S, (crownY + 6) * S, (crownX - tr.crownRX * 0.4) * S, (crownY + 1) * S, PAL.trunkDark, 2);
+      PixelGFX.fineLine(ctx, tr.x * S, (crownY + 5) * S, (crownX + tr.crownRX * 0.4) * S, (crownY + 1) * S, PAL.trunkBarkDark, 2);
 
       // Copa frondosa multi-racimo en 5 tonos de flor de cerezo
       PixelGFX.foliageCluster(ctx, crownX, crownY, tr.crownRX, tr.crownRY, sakuraColors, i * 3.1);
     }
 
-    // D) Pétalos de cerezo volando suavemente con la brisa primaveral
+    // D) Pétalos de cerezo delicados de dos tonos volando suavemente con la brisa primaveral
     for (let p = 0; p < SAKURA_PETALS.length; p++) {
       const pt = SAKURA_PETALS[p];
-      const px = wx + ((pt.h1 * ww + time * (8 + pt.h3 * 6)) % ww);
-      const py = wy + 12 + ((pt.h2 * (wh - 14) + time * (4 + pt.h1 * 4) + Math.sin(time * 3 + p) * 3) % (wh - 14));
+      const fpx = Math.round((wx + ((pt.h1 * ww + time * (8 + pt.h3 * 6)) % ww)) * S);
+      const fpy = Math.round((wy + 12 + ((pt.h2 * (wh - 14) + time * (4 + pt.h1 * 4) + Math.sin(time * 3 + p) * 3) % (wh - 14))) * S);
       const petalCol = (p % 3 === 0) ? PAL.sakuraWhite : (p % 3 === 1 ? PAL.sakuraLight : PAL.sakuraMid);
-      PixelGFX.pset(ctx, px, py, petalCol);
+      PixelGFX.fineRect(ctx, fpx, fpy, 2, 1, petalCol);
+      PixelGFX.finePset(ctx, fpx + 1, fpy + 1, PAL.sakuraWhite);
     }
 
     ctx.restore();
@@ -203,9 +210,10 @@ window.MicroCosmos = window.MicroCosmos || {};
 
   /**
    * 3. Rayos de Luz Solar entrando por el gran ventanal hacia el laboratorio blanco
+   * Tramado Bayer 4x4 nativo 960x540 (1x1px) para haces de luz cristalinos sin bloques toscos
    */
   function drawIncomingSunbeams(ctx, time) {
-    // Dos haces diagonales de luz solar suave que cruzan desde el ventanal hacia la derecha/abajo
+    const S = ns.SCALE || 3;
     const beams = [
       { xTop: 94, xBot: 138, width: 26 },
       { xTop: 142, xBot: 192, width: 32 },
@@ -213,31 +221,30 @@ window.MicroCosmos = window.MicroCosmos || {};
     ];
 
     ctx.fillStyle = PAL.sunbeamCore;
+    const yStart = 12 * S;
+    const yEnd = 134 * S;
     for (let b = 0; b < beams.length; b++) {
       const bm = beams[b];
-      for (let py = 12; py < 134; py++) {
-        const t = (py - 12) / (134 - 12);
-        const startX = Math.round(MathUtil.lerp(bm.xTop, bm.xBot, t));
-        const endX = startX + bm.width;
-        // Dithering sutil para no tapar los objetos detrás pero dar calidez luminosa
-        const intensity = (1.0 - t * 0.55) * 0.32;
-        for (let px = startX; px < endX; px++) {
-          if (intensity > MathUtil.bayer(px, py)) {
-            PixelGFX.pset(ctx, px, py);
+      const fWidth = bm.width * S;
+      for (let fpy = yStart; fpy < yEnd; fpy++) {
+        const t = (fpy - yStart) / (yEnd - yStart);
+        const startX = Math.round(MathUtil.lerp(bm.xTop * S, bm.xBot * S, t));
+        const endX = startX + fWidth;
+        const intensity = (1.0 - t * 0.55) * 0.30;
+        for (let fpx = startX; fpx < endX; fpx++) {
+          if (intensity > MathUtil.bayer(fpx, fpy)) {
+            ctx.fillRect(fpx, fpy, 1, 1);
           }
         }
       }
     }
 
-    // Pequeñas partículas de luz / polen brillando dentro de los haces solares
-    for (let m = 0; m < 12; m++) {
-      const mx = 98 + ((m * 17 + Math.floor(time * 4)) % 125);
-      const my = 20 + ((m * 23 + Math.floor(time * 3)) % 95);
-      if (((m + Math.floor(time * 3)) % 2) === 0) {
-        PixelGFX.pset(ctx, mx, my, PAL.sunMotel);
-      } else {
-        PixelGFX.pset(ctx, mx, my, PAL.white);
-      }
+    // Pequeñas partículas de luz / polen brillando dentro de los haces solares (2x2px nativos)
+    for (let m = 0; m < 14; m++) {
+      const fmx = Math.round((98 + ((m * 17 + time * 4) % 125)) * S);
+      const fmy = Math.round((20 + ((m * 23 + time * 3) % 95)) * S);
+      const col = ((m + Math.floor(time * 3)) % 2 === 0) ? PAL.sunMotel : PAL.white;
+      PixelGFX.fineRect(ctx, fmx, fmy, 2, 2, col);
     }
   }
 
@@ -324,6 +331,7 @@ window.MicroCosmos = window.MicroCosmos || {};
    * 5. Estantería Blanca de Biología Molecular y Monitor Mural Bioinformático (Derecha: x: 226..312)
    */
   function drawRightWallBiotech(ctx, time) {
+    const S = ns.SCALE || 3;
     // A) Estantería blanca superior (x: 226..312, y: 28)
     const sx = 226;
     const sy = 28;
@@ -376,14 +384,16 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.rectOutline(ctx, mx - 1, my - 1, mw + 2, mh + 2, PAL.benchSurface);
     PixelGFX.rect(ctx, mx, my, mw, mh, PAL.screenBg);
 
-    // Doble hélice de ADN y electroforesis a la izquierda de la pantalla
-    for (let x = 0; x < 26; x++) {
-      const wave = Math.round(Math.sin(x * 0.45 - time * 3.0) * 4);
-      PixelGFX.pset(ctx, mx + 4 + x, my + 10 + wave, PAL.chloroplast);
-      PixelGFX.pset(ctx, mx + 4 + x, my + 10 - wave, PAL.neonCyan);
-      if (x % 3 === 0) {
-        PixelGFX.line(ctx, mx + 4 + x, my + 10 - wave, mx + 4 + x, my + 10 + wave, PAL.screenGrid);
+    // Doble hélice de ADN de alta precisión (curvas sinusoidales suaves en 960x540)
+    const fmx = (mx + 4) * S;
+    const fmy = (my + 10) * S;
+    for (let fx = 0; fx < 26 * S; fx++) {
+      const wave = Math.round(Math.sin((fx / S) * 0.45 - time * 3.0) * 4 * S);
+      if (fx % 8 === 0) {
+        PixelGFX.fineLine(ctx, fmx + fx, fmy - wave, fmx + fx, fmy + wave, PAL.screenGrid, 1);
       }
+      PixelGFX.fineRect(ctx, fmx + fx, fmy + wave - 1, 2, 2, PAL.chloroplast);
+      PixelGFX.fineRect(ctx, fmx + fx, fmy - wave - 1, 2, 2, PAL.neonCyan);
     }
     for (let lane = 0; lane < 5; lane++) {
       const lx = mx + 5 + lane * 5;
@@ -409,6 +419,7 @@ window.MicroCosmos = window.MicroCosmos || {};
    * 6. Mesada Blanca de Biotecnología, Gabinetes Clínicos, Computadoras y Cultivo In Vitro
    */
   function drawWhiteBenchAndComputers(ctx, time) {
+    const S = ns.SCALE || 3;
     const deskY = 130;
 
     // Superficie de la mesada blanca clínica y mobiliario de cajoneras/gabinetes debajo
@@ -439,7 +450,7 @@ window.MicroCosmos = window.MicroCosmos || {};
 
     PixelGFX.drawSprite(ctx, Sprites.eppendorfRack, 40, deskY - 9);
 
-    // 2. Computadora Izquierda (Carcasa Blanca/Plata con Cromatograma de ADN)
+    // 2. Computadora Izquierda (Carcasa Blanca/Plata con Cromatograma de ADN de alta precisión)
     const mon1X = 68;
     const mon1Y = 92;
     const mon1W = 50;
@@ -458,14 +469,16 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.pset(ctx, mon1X + 4, mon1Y + 1, PAL.starGold);
     PixelGFX.pset(ctx, mon1X + 6, mon1Y + 1, PAL.chloroplast);
 
-    for (let x = 2; x < mon1W - 2; x++) {
-      const tX = x * 0.35 + time * 4.2;
-      const yG = Math.round(Math.max(0, Math.sin(tX) * 7));
-      const yC = Math.round(Math.max(0, Math.cos(tX * 1.3 + 1.0) * 6));
-      const yP = Math.round(Math.max(0, Math.sin(tX * 0.8 + 2.5) * 6));
-      PixelGFX.pset(ctx, mon1X + x, mon1Y + 18 - yG, PAL.chloroplast);
-      PixelGFX.pset(ctx, mon1X + x, mon1Y + 18 - yC, PAL.neonCyan);
-      PixelGFX.pset(ctx, mon1X + x, mon1Y + 18 - yP, PAL.neonPinkLight);
+    // Curvas de cromatograma de secuenciación Sanger en píxeles nativos
+    const baseLineY = (mon1Y + 18) * S;
+    for (let fx = 6; fx < (mon1W - 2) * S; fx++) {
+      const tX = (fx / S) * 0.35 + time * 4.2;
+      const yG = Math.round(Math.max(0, Math.sin(tX) * 7 * S));
+      const yC = Math.round(Math.max(0, Math.cos(tX * 1.3 + 1.0) * 6 * S));
+      const yP = Math.round(Math.max(0, Math.sin(tX * 0.8 + 2.5) * 6 * S));
+      PixelGFX.fineRect(ctx, mon1X * S + fx, baseLineY - yG, 1, 2, PAL.chloroplast);
+      PixelGFX.fineRect(ctx, mon1X * S + fx, baseLineY - yC, 1, 2, PAL.neonCyan);
+      PixelGFX.fineRect(ctx, mon1X * S + fx, baseLineY - yP, 1, 2, PAL.neonPinkLight);
     }
     PixelGFX.line(ctx, mon1X + 2, mon1Y + 19, mon1X + mon1W - 3, mon1Y + 19, PAL.screenGrid);
     for (let b = 3; b < mon1W - 4; b += 3) {
@@ -615,7 +628,11 @@ window.MicroCosmos = window.MicroCosmos || {};
         const sx = scientistInfo.leftLensX - 15 + Math.cos(angle) * (5 + i);
         const sy = scientistInfo.leftLensY - 5 + Math.sin(angle * 1.3) * (5 + i);
         const col = i % 2 === 0 ? PAL.chloroplast : PAL.neonCyan;
-        PixelGFX.pset(sctx, sx, sy, col);
+        if (i % 2 === 0) {
+          PixelGFX.sparkle(sctx, sx, sy, PAL.white, col);
+        } else {
+          PixelGFX.fineCircleFill(sctx, sx * (ns.SCALE || 3), sy * (ns.SCALE || 3), 2, col);
+        }
       }
     }
 

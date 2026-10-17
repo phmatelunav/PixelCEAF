@@ -14,60 +14,591 @@ window.MicroCosmos = window.MicroCosmos || {};
   const { WIDTH, HEIGHT, PAL, PixelGFX, MathUtil, Sprites } = ns;
 
   // ==========================================================================
-  // MICRO-TIPOGRAFÍA PIXEL-ART 3x5 (NÍTIDA SIN DIFUMINADO)
+  // TIPOGRAFÍA PIXEL-ART NATIVA 7x11 PARA 960x540 (NÍTIDA SIN DIFUMINADO)
+  // Mantiene exactamente el mismo espaciado lógico (spacing=4 => 12px nativos)
   // ==========================================================================
-  const FONT_3X5 = {
-    'A': ['010', '101', '111', '101', '101'],
-    'B': ['110', '101', '110', '101', '110'],
-    'C': ['011', '100', '100', '100', '011'],
-    'D': ['110', '101', '101', '101', '110'],
-    'E': ['111', '100', '110', '100', '111'],
-    'F': ['111', '100', '110', '100', '100'],
-    'G': ['011', '100', '101', '101', '011'],
-    'H': ['101', '101', '111', '101', '101'],
-    'I': ['111', '010', '010', '010', '111'],
-    'J': ['001', '001', '001', '101', '010'],
-    'K': ['101', '101', '110', '101', '101'],
-    'L': ['100', '100', '100', '100', '111'],
-    'M': ['101', '111', '111', '101', '101'],
-    'N': ['101', '111', '111', '111', '101'],
-    'O': ['010', '101', '101', '101', '010'],
-    'P': ['110', '101', '110', '100', '100'],
-    'Q': ['010', '101', '101', '111', '011'],
-    'R': ['110', '101', '110', '101', '101'],
-    'S': ['011', '100', '010', '001', '110'],
-    'T': ['111', '010', '010', '010', '010'],
-    'U': ['101', '101', '101', '101', '111'],
-    'V': ['101', '101', '101', '101', '010'],
-    'W': ['101', '101', '111', '111', '101'],
-    'X': ['101', '101', '010', '101', '101'],
-    'Y': ['101', '101', '010', '010', '010'],
-    'Z': ['111', '001', '010', '100', '111'],
-    '0': ['111', '101', '101', '101', '111'],
-    '1': ['010', '110', '010', '010', '111'],
-    '2': ['111', '001', '111', '100', '111'],
-    '3': ['111', '001', '011', '001', '111'],
-    '4': ['101', '101', '111', '001', '001'],
-    '5': ['111', '100', '111', '001', '111'],
-    '6': ['111', '100', '111', '101', '111'],
-    '7': ['111', '001', '010', '010', '010'],
-    '8': ['111', '101', '111', '101', '111'],
-    '9': ['111', '101', '111', '001', '111'],
-    '\'': ['010', '010', '000', '000', '000'],
-    '.': ['000', '000', '000', '000', '010'],
-    ',': ['000', '000', '000', '010', '100'],
-    ':': ['000', '010', '000', '010', '000'],
-    '·': ['000', '000', '010', '000', '000'],
-    '/': ['001', '001', '010', '100', '100'],
-    '-': ['000', '000', '111', '000', '000'],
-    ' ': ['000', '000', '000', '000', '000']
+  const FONT_7X11 = {
+    'A': [
+      '..111..',
+      '.11.11.',
+      '11...11',
+      '11...11',
+      '11...11',
+      '1111111',
+      '1111111',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11'
+    ],
+    'B': [
+      '111111.',
+      '11...11',
+      '11...11',
+      '11...11',
+      '111111.',
+      '111111.',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '111111.'
+    ],
+    'C': [
+      '.11111.',
+      '11...11',
+      '11....1',
+      '11.....',
+      '11.....',
+      '11.....',
+      '11.....',
+      '11.....',
+      '11....1',
+      '11...11',
+      '.11111.'
+    ],
+    'D': [
+      '11111..',
+      '11..11.',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11..11.',
+      '11111..'
+    ],
+    'E': [
+      '1111111',
+      '1111111',
+      '11.....',
+      '11.....',
+      '111111.',
+      '111111.',
+      '11.....',
+      '11.....',
+      '11.....',
+      '1111111',
+      '1111111'
+    ],
+    'F': [
+      '1111111',
+      '1111111',
+      '11.....',
+      '11.....',
+      '111111.',
+      '111111.',
+      '11.....',
+      '11.....',
+      '11.....',
+      '11.....',
+      '11.....'
+    ],
+    'G': [
+      '.11111.',
+      '11...11',
+      '11.....',
+      '11.....',
+      '11.....',
+      '11..111',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '.11111.'
+    ],
+    'H': [
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '1111111',
+      '1111111',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11'
+    ],
+    'I': [
+      '.11111.',
+      '.11111.',
+      '...11..',
+      '...11..',
+      '...11..',
+      '...11..',
+      '...11..',
+      '...11..',
+      '...11..',
+      '.11111.',
+      '.11111.'
+    ],
+    'J': [
+      '..11111',
+      '....11.',
+      '....11.',
+      '....11.',
+      '....11.',
+      '....11.',
+      '....11.',
+      '11..11.',
+      '11..11.',
+      '11..11.',
+      '.1111..'
+    ],
+    'K': [
+      '11...11',
+      '11..11.',
+      '11.11..',
+      '1111...',
+      '111....',
+      '1111...',
+      '11.11..',
+      '11..11.',
+      '11...11',
+      '11...11',
+      '11...11'
+    ],
+    'L': [
+      '11.....',
+      '11.....',
+      '11.....',
+      '11.....',
+      '11.....',
+      '11.....',
+      '11.....',
+      '11.....',
+      '11.....',
+      '1111111',
+      '1111111'
+    ],
+    'M': [
+      '11...11',
+      '111.111',
+      '1111111',
+      '11.1.11',
+      '11.1.11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11'
+    ],
+    'N': [
+      '11...11',
+      '111..11',
+      '111..11',
+      '1111.11',
+      '11.1111',
+      '11.1111',
+      '11..111',
+      '11..111',
+      '11...11',
+      '11...11',
+      '11...11'
+    ],
+    'O': [
+      '.11111.',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '.11111.'
+    ],
+    'P': [
+      '111111.',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '111111.',
+      '11.....',
+      '11.....',
+      '11.....',
+      '11.....',
+      '11.....'
+    ],
+    'Q': [
+      '.11111.',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11.1.11',
+      '11..111',
+      '.11111.',
+      '.....11'
+    ],
+    'R': [
+      '111111.',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '111111.',
+      '11.11..',
+      '11..11.',
+      '11...11',
+      '11...11',
+      '11...11'
+    ],
+    'S': [
+      '.11111.',
+      '11...11',
+      '11.....',
+      '11.....',
+      '.1111..',
+      '..1111.',
+      '.....11',
+      '.....11',
+      '11...11',
+      '11...11',
+      '.11111.'
+    ],
+    'T': [
+      '1111111',
+      '1111111',
+      '...11..',
+      '...11..',
+      '...11..',
+      '...11..',
+      '...11..',
+      '...11..',
+      '...11..',
+      '...11..',
+      '...11..'
+    ],
+    'U': [
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '.11111.'
+    ],
+    'V': [
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '.11.11.',
+      '.11.11.',
+      '..111..',
+      '..111..',
+      '...1...'
+    ],
+    'W': [
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11.1.11',
+      '11.1.11',
+      '1111111',
+      '111.111',
+      '11...11',
+      '11...11'
+    ],
+    'X': [
+      '11...11',
+      '11...11',
+      '.11.11.',
+      '.11.11.',
+      '..111..',
+      '..111..',
+      '.11.11.',
+      '.11.11.',
+      '11...11',
+      '11...11',
+      '11...11'
+    ],
+    'Y': [
+      '11...11',
+      '11...11',
+      '.11.11.',
+      '.11.11.',
+      '..111..',
+      '...11..',
+      '...11..',
+      '...11..',
+      '...11..',
+      '...11..',
+      '...11..'
+    ],
+    'Z': [
+      '1111111',
+      '1111111',
+      '....11.',
+      '....11.',
+      '...11..',
+      '..11...',
+      '..11...',
+      '.11....',
+      '11.....',
+      '1111111',
+      '1111111'
+    ],
+    '0': [
+      '.11111.',
+      '11...11',
+      '11..111',
+      '11..111',
+      '11.1.11',
+      '11.1.11',
+      '111..11',
+      '111..11',
+      '11...11',
+      '11...11',
+      '.11111.'
+    ],
+    '1': [
+      '...11..',
+      '..111..',
+      '.1111..',
+      '...11..',
+      '...11..',
+      '...11..',
+      '...11..',
+      '...11..',
+      '...11..',
+      '.111111',
+      '.111111'
+    ],
+    '2': [
+      '.11111.',
+      '11...11',
+      '.....11',
+      '.....11',
+      '....11.',
+      '..111..',
+      '.11....',
+      '11.....',
+      '11.....',
+      '1111111',
+      '1111111'
+    ],
+    '3': [
+      '.11111.',
+      '11...11',
+      '.....11',
+      '.....11',
+      '..1111.',
+      '..1111.',
+      '.....11',
+      '.....11',
+      '11...11',
+      '11...11',
+      '.11111.'
+    ],
+    '4': [
+      '....11.',
+      '...111.',
+      '..1111.',
+      '.11.11.',
+      '11..11.',
+      '11..11.',
+      '1111111',
+      '1111111',
+      '....11.',
+      '....11.',
+      '....11.'
+    ],
+    '5': [
+      '1111111',
+      '1111111',
+      '11.....',
+      '11.....',
+      '111111.',
+      '111111.',
+      '.....11',
+      '.....11',
+      '11...11',
+      '11...11',
+      '.11111.'
+    ],
+    '6': [
+      '.11111.',
+      '11...11',
+      '11.....',
+      '11.....',
+      '111111.',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '.11111.'
+    ],
+    '7': [
+      '1111111',
+      '1111111',
+      '.....11',
+      '....11.',
+      '....11.',
+      '...11..',
+      '...11..',
+      '..11...',
+      '..11...',
+      '..11...',
+      '..11...'
+    ],
+    '8': [
+      '.11111.',
+      '11...11',
+      '11...11',
+      '11...11',
+      '.11111.',
+      '.11111.',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '.11111.'
+    ],
+    '9': [
+      '.11111.',
+      '11...11',
+      '11...11',
+      '11...11',
+      '11...11',
+      '.111111',
+      '.....11',
+      '.....11',
+      '11...11',
+      '11...11',
+      '.11111.'
+    ],
+    '\'': [
+      '..11...',
+      '..11...',
+      '.11....',
+      '.11....',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......'
+    ],
+    '.': [
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '..11...',
+      '..11...'
+    ],
+    ',': [
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '..11...',
+      '..11...',
+      '.11....'
+    ],
+    ':': [
+      '.......',
+      '.......',
+      '..11...',
+      '..11...',
+      '.......',
+      '.......',
+      '.......',
+      '..11...',
+      '..11...',
+      '.......',
+      '.......'
+    ],
+    '·': [
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '..111..',
+      '..111..',
+      '..111..',
+      '.......',
+      '.......',
+      '.......',
+      '.......'
+    ],
+    '/': [
+      '.....11',
+      '.....11',
+      '....11.',
+      '....11.',
+      '...11..',
+      '...11..',
+      '..11...',
+      '..11...',
+      '.11....',
+      '11.....',
+      '11.....'
+    ],
+    '-': [
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.11111.',
+      '.11111.',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......'
+    ],
+    ' ': [
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......'
+    ]
   };
 
   function drawPixelText3x5(ctx, text, x, y, color, spacing = 4) {
+    const S = ns.SCALE || 3;
     const upper = text.toUpperCase();
-    let cx = Math.round(x);
-    const cy = Math.round(y);
+    let cx = Math.round(x * S);
+    const cy = Math.round(y * S) + 2;
 
+    ctx.fillStyle = color;
     for (let i = 0; i < upper.length; i++) {
       let ch = upper[i];
       let hasAccent = false;
@@ -79,26 +610,29 @@ window.MicroCosmos = window.MicroCosmos || {};
       else if (ch === 'Ú') { ch = 'U'; hasAccent = true; }
       else if (ch === 'Ñ') { ch = 'N'; hasTilde = true; }
 
-      const glyph = FONT_3X5[ch] || FONT_3X5[' '];
+      const glyph = FONT_7X11[ch] || FONT_7X11[' '];
       if (hasAccent) {
-        PixelGFX.pset(ctx, cx + 1, cy - 2, color);
-        PixelGFX.pset(ctx, cx + 2, cy - 3, color);
+        PixelGFX.fineRect(ctx, cx + 4, cy - 4, 2, 1, color);
+        PixelGFX.fineRect(ctx, cx + 3, cy - 3, 2, 1, color);
+        PixelGFX.fineRect(ctx, cx + 2, cy - 2, 2, 1, color);
       } else if (hasTilde) {
-        PixelGFX.line(ctx, cx, cy - 2, cx + 2, cy - 2, color);
+        PixelGFX.fineRect(ctx, cx + 1, cy - 3, 2, 1, color);
+        PixelGFX.fineRect(ctx, cx + 3, cy - 4, 2, 1, color);
+        PixelGFX.fineRect(ctx, cx + 5, cy - 3, 1, 1, color);
       }
-      for (let r = 0; r < 5; r++) {
+      for (let r = 0; r < 11; r++) {
         const rowStr = glyph[r];
-        for (let c = 0; c < 3; c++) {
+        for (let c = 0; c < 7; c++) {
           if (rowStr[c] === '1') {
-            PixelGFX.pset(ctx, cx + c, cy + r, color);
+            PixelGFX.finePset(ctx, cx + c + 1, cy + r, color);
           }
         }
       }
-      cx += spacing;
+      cx += Math.round(spacing * S);
     }
   }
 
-  // Exponer motor tipográfico 3x5 en PixelGFX para rótulos HUD en el lienzo
+  // Exponer motor tipográfico en PixelGFX para rótulos HUD en el lienzo
   PixelGFX.drawText3x5 = drawPixelText3x5;
 
   // ==========================================================================
@@ -170,14 +704,20 @@ window.MicroCosmos = window.MicroCosmos || {};
   ], COAT_MAP);
 
   /**
-   * Dibuja un anillo circular o arco con grosor definido en Pixel-Art
+   * Dibuja un anillo circular o arco de alta precisión nativa 960x540
    */
   function drawThickArc(ctx, cx, cy, rOuter, rInner, startDeg, endDeg, color) {
-    const rOut2 = rOuter * rOuter;
-    const rIn2 = rInner * rInner;
+    const S = ns.SCALE || 3;
+    const fcx = Math.round(cx * S);
+    const fcy = Math.round(cy * S);
+    const fOut = Math.round(rOuter * S);
+    const fIn = Math.round(rInner * S);
+    const rOut2 = fOut * fOut;
+    const rIn2 = fIn * fIn;
 
-    for (let dy = -rOuter; dy <= rOuter; dy++) {
-      for (let dx = -rOuter; dx <= rOuter; dx++) {
+    ctx.fillStyle = color;
+    for (let dy = -fOut; dy <= fOut; dy++) {
+      for (let dx = -fOut; dx <= fOut; dx++) {
         const d2 = dx * dx + dy * dy;
         if (d2 <= rOut2 && d2 >= rIn2) {
           let deg = (Math.atan2(dy, dx) * 180) / Math.PI;
@@ -190,7 +730,7 @@ window.MicroCosmos = window.MicroCosmos || {};
             inside = deg >= startDeg || deg <= endDeg;
           }
           if (inside) {
-            PixelGFX.pset(ctx, Math.round(cx + dx), Math.round(cy + dy), color);
+            ctx.fillRect(fcx + dx, fcy + dy, 1, 1);
           }
         }
       }
@@ -202,6 +742,7 @@ window.MicroCosmos = window.MicroCosmos || {};
   // Ubicado en la mitad superior del lienzo (centrado y jerárquicamente mayor)
   // ==========================================================================
   function drawCEAFMainLogo(ctx, localTime, globalTime) {
+    const S = ns.SCALE || 3;
     const growT = MathUtil.easeOutCubic(MathUtil.clamp(localTime / 1.1, 0, 1));
     const letterAlpha = MathUtil.smoothstep(0.15, 0.85, localTime);
 
@@ -214,12 +755,12 @@ window.MicroCosmos = window.MicroCosmos || {};
       const cX = 96;
       drawThickArc(ctx, cX, centerY, rOut, rIn, 42, 318, PAL.ceafGray);
 
-      // --- Letra 'e' geométrica con barra diagonal interna ---
+      // --- Letra 'e' geométrica con barra diagonal interna de alta precisión ---
       const eX = 130;
       drawThickArc(ctx, eX, centerY, rOut, rIn, 38, 325, PAL.ceafGray);
-      // Travesaño diagonal característico de la 'e' de CEAF (desde el centro-izquierda al borde superior derecho)
-      for (let t = -1; t <= 2; t++) {
-        PixelGFX.line(ctx, eX - 3 + t, centerY + 3, eX + 9 + t, centerY - 9, PAL.ceafGray);
+      // Travesaño diagonal característico de la 'e' de CEAF en píxeles nativos
+      for (let t = -5; t <= 5; t++) {
+        PixelGFX.fineLine(ctx, eX * S - 9 + t, centerY * S + 9, eX * S + 27 + t, centerY * S - 27, PAL.ceafGray, 1);
       }
 
       // --- Letra 'a' geométrica con asta vertical derecha ---
@@ -242,14 +783,14 @@ window.MicroCosmos = window.MicroCosmos || {};
 
     // Tallo vertical verde de la 'f'
     PixelGFX.rect(ctx, fStemX, stemTopY, 4, stemBottomY - stemTopY, PAL.ceafGreen);
-    PixelGFX.line(ctx, fStemX + 1, stemTopY, fStemX + 1, stemBottomY - 1, PAL.ceafGreenLight);
+    PixelGFX.fineRect(ctx, fStemX * S + 3, stemTopY * S, 2, (stemBottomY - stemTopY) * S, PAL.ceafGreenLight);
 
     if (growT > 0.45) {
       // Ligero rebote elástico de la rama media cuando el fruto se desprende (localTime ~ 3.1s)
       let branchSpringY = 0;
       if (localTime > 3.1 && localTime < 3.9) {
         const bt = localTime - 3.1;
-        branchSpringY = Math.round(-Math.sin(bt * 18) * Math.exp(-bt * 4) * 2.2);
+        branchSpringY = -Math.sin(bt * 18) * Math.exp(-bt * 4) * 2.2;
       }
 
       // Arco superior de la 'f' (curva hacia arriba a la derecha, dejando aire bajo el borde superior)
@@ -261,36 +802,34 @@ window.MicroCosmos = window.MicroCosmos || {};
       PixelGFX.rect(ctx, fStemX + 15, 26 + branchSpringY, 5, 4, PAL.ceafGreen);
     }
 
-    // Hoja verde lanceolada inclinada hacia arriba-izquierda
+    // Hoja verde lanceolada inclinada hacia arriba-izquierda en resolución nativa 960x540
     if (growT > 0.6) {
-      const leafX = fStemX - 8;
-      const leafY = 22;
-      for (let dy = -8; dy <= 8; dy++) {
-        for (let dx = -10; dx <= 10; dx++) {
-          const rx = dx * 0.76 + dy * 0.64;
-          const ry = -dx * 0.64 + dy * 0.76;
-          if ((rx * rx) / 52 + (ry * ry) / 13 <= 1.0) {
-            const col = ry < -1.0 ? PAL.ceafGreenLight : PAL.ceafGreen;
-            PixelGFX.pset(ctx, Math.round(leafX + dx), Math.round(leafY + dy), col);
+      const leafX = (fStemX - 8) * S;
+      const leafY = 22 * S;
+      for (let dy = -24; dy <= 24; dy++) {
+        for (let dx = -30; dx <= 30; dx++) {
+          const rx = (dx / S) * 0.76 + (dy / S) * 0.64;
+          const ry = -(dx / S) * 0.64 + (dy / S) * 0.76;
+          const dNorm = (rx * rx) / 52 + (ry * ry) / 13;
+          if (dNorm <= 1.0) {
+            let col = ry < -0.6 ? PAL.ceafGreenLight : PAL.ceafGreen;
+            if (Math.abs(ry) < 0.35 && rx > -5.5 && rx < 5.5) col = '#6ee7b7'; // nervadura central fina
+            PixelGFX.finePset(ctx, Math.round(leafX + dx), Math.round(leafY + dy), col);
           }
         }
       }
-      PixelGFX.pset(ctx, leafX - 7, leafY - 6, PAL.ceafGreen);
-      PixelGFX.pset(ctx, leafX - 8, leafY - 7, PAL.ceafGreen);
+      PixelGFX.fineLine(ctx, leafX - 20, leafY - 17, leafX - 25, leafY - 21, PAL.ceafGreen, 2);
     }
 
     // Fruto circular rojo-terracota a la derecha del tallo bajo el arco de la 'f'
-    // Fase 1 (0.72..2.7s): Crece y brilla junto a la 'f'
-    // Fase 2 (2.7..3.1s): Pequeño temblor de madurez antes de soltarse
-    // Fase 3 (3.1s+): Cae y rebota (bouncing con squash & stretch) moviéndose hacia la derecha sobre la línea divisoria (y=95)
     if (growT > 0.72) {
       const startX = fStemX + 20; // 208
       const startY = 48;
-      const groundY = 87; // Con radio 8, la base toca exactamente la línea divisoria y = 95
+      const groundY = 87;
 
       let fruitX = startX;
       let fruitY = startY;
-      const fruitR = Math.round(MathUtil.lerp(1, 8, MathUtil.invLerp(0.72, 1.0, growT)));
+      const fruitR = MathUtil.lerp(1, 8, MathUtil.invLerp(0.72, 1.0, growT));
       let rx = fruitR;
       let ry = fruitR;
       let rotAngle = 0;
@@ -433,7 +972,7 @@ window.MicroCosmos = window.MicroCosmos || {};
         }
       }
 
-      // Dibujar la esfera naranja con sombreado volumétrico de 3 tonos y brillo especular rodante
+      // Dibujar la esfera naranja en resolución nativa 960x540 (sin picos cardinales)
       if (fruitX - rx < WIDTH - 5) {
         const S = ns.SCALE || 3;
         ctx.save();
@@ -441,29 +980,35 @@ window.MicroCosmos = window.MicroCosmos || {};
         ctx.rect(6 * S, 6 * S, (WIDTH - 12) * S, (HEIGHT - 12) * S);
         ctx.clip();
 
-        for (let dy = -ry; dy <= ry; dy++) {
-          for (let dx = -rx; dx <= rx; dx++) {
-            const normDist = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry);
+        const fcx = Math.round(fruitX * S);
+        const fcy = Math.round(fruitY * S);
+        const frx = Math.max(2, Math.round(rx * S));
+        const fry = Math.max(2, Math.round(ry * S));
+
+        for (let dy = -fry; dy <= fry; dy++) {
+          for (let dx = -frx; dx <= frx; dx++) {
+            const normDist = (dx * dx) / (frx * frx) + (dy * dy) / (fry * fry);
             if (normDist <= 1.0) {
               let pCol = PAL.ceafFruit;
               // Sombra creciente inferior-derecha y Sel-Out en el borde inferior
-              if (normDist > 0.78 && dy > 1) {
+              if (normDist > 0.82 && dy > 2) {
                 pCol = '#8c2d19';
-              } else if (dx + dy > rx * 0.45) {
+              } else if (dx + dy > frx * 0.42) {
                 pCol = '#b53d22';
+              } else if (dx + dy < -frx * 0.35 && normDist < 0.72) {
+                pCol = '#e06344';
               }
-              PixelGFX.pset(ctx, fruitX + dx, fruitY + dy, pCol);
+              PixelGFX.finePset(ctx, fcx + dx, fcy + dy, pCol);
             }
           }
         }
 
         // Brillo especular que rota suavemente mientras la esfera avanza y rebota
         if (fruitR >= 6) {
-          const hx = fruitX + Math.round(Math.cos(rotAngle - 2.35) * 2.8);
-          const hy = fruitY + Math.round(Math.sin(rotAngle - 2.35) * 2.4);
-          PixelGFX.circleFill(ctx, hx, hy, 2, PAL.ceafFruitLight);
-          PixelGFX.pset(ctx, hx - 1, hy - 1, PAL.white);
-          PixelGFX.pset(ctx, hx, hy - 1, PAL.white);
+          const hx = fcx + Math.round(Math.cos(rotAngle - 2.35) * 2.8 * S);
+          const hy = fcy + Math.round(Math.sin(rotAngle - 2.35) * 2.4 * S);
+          PixelGFX.fineCircleFill(ctx, hx, hy, 5, PAL.ceafFruitLight);
+          PixelGFX.fineCircleFill(ctx, hx - 2, hy - 2, 2, PAL.white);
         }
         ctx.restore();
       }
@@ -474,9 +1019,7 @@ window.MicroCosmos = window.MicroCosmos || {};
         if (sparklePhase < 0.55) {
           const sx = startX + 3;
           const sy = startY - 7;
-          PixelGFX.pset(ctx, sx, sy, PAL.starGold);
-          PixelGFX.line(ctx, sx - 2, sy, sx + 2, sy, PAL.white);
-          PixelGFX.line(ctx, sx, sy - 2, sx, sy + 2, PAL.white);
+          PixelGFX.sparkle(ctx, sx, sy, PAL.white, PAL.starGold);
         }
       }
     }
@@ -487,6 +1030,7 @@ window.MicroCosmos = window.MicroCosmos || {};
   // Tres paneles verticales (Ola costera, Cordillera/Río, Manzana/Agro) + Texto
   // ==========================================================================
   function drawGORELogo(ctx, baseX, baseY) {
+    const S = ns.SCALE || 3;
     // Dimensiones de cada uno de los 3 paneles verticales: 17x27 px
     const pW = 17;
     const pH = 27;
@@ -502,9 +1046,11 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.circleFill(ctx, p1X + 9, panelsY + 9, 4, PAL.white);
     PixelGFX.circleFill(ctx, p1X + 3, panelsY + 11, 4, PAL.white);
     PixelGFX.rect(ctx, p1X, panelsY + 10, pW, 9, PAL.white);
-    // Gaviotas celestes
-    PixelGFX.line(ctx, p1X + 6, panelsY + 7, p1X + 8, panelsY + 7, PAL.goreSky);
-    PixelGFX.line(ctx, p1X + 11, panelsY + 9, p1X + 13, panelsY + 9, PAL.goreSky);
+    // Gaviotas celestes de trazo fino
+    PixelGFX.fineLine(ctx, (p1X + 5) * S, (panelsY + 7) * S, (p1X + 7) * S, (panelsY + 6) * S, PAL.goreSky, 2);
+    PixelGFX.fineLine(ctx, (p1X + 7) * S, (panelsY + 6) * S, (p1X + 9) * S, (panelsY + 7) * S, PAL.goreSky, 2);
+    PixelGFX.fineLine(ctx, (p1X + 10) * S, (panelsY + 9) * S, (p1X + 12) * S, (panelsY + 8) * S, PAL.goreSky, 2);
+    PixelGFX.fineLine(ctx, (p1X + 12) * S, (panelsY + 8) * S, (p1X + 14) * S, (panelsY + 9) * S, PAL.goreSky, 2);
     // Ola azul curvada y mar inferior
     PixelGFX.rect(ctx, p1X, panelsY + 17, pW, 10, PAL.goreWaveMid);
     PixelGFX.ellipseFill(ctx, p1X + 7, panelsY + 16, 7, 5, PAL.goreWaveDark);
@@ -515,22 +1061,23 @@ window.MicroCosmos = window.MicroCosmos || {};
     const p2X = panelsStartX + pW + gap;
     PixelGFX.rect(ctx, p2X, panelsY, pW, pH, PAL.goreSky);
     PixelGFX.circleFill(ctx, p2X + 8, panelsY + 5, 5, PAL.white);
-    // Cumbres grises nevadas al fondo
-    for (let x = 0; x < pW; x++) {
-      const mH = Math.abs(x - 9);
-      PixelGFX.line(ctx, p2X + x, panelsY + 6 + Math.floor(mH * 0.5), p2X + x, panelsY + 14, '#c7ccd1');
+    // Cumbres grises nevadas al fondo con pendiente suave nativa
+    for (let fx = 0; fx < pW * S; fx++) {
+      const mH = Math.abs(fx - 9 * S);
+      const topY = Math.round((panelsY + 6) * S + mH * 0.5);
+      PixelGFX.fineRect(ctx, p2X * S + fx, topY, 1, (panelsY + 14) * S - topY, '#c7ccd1');
     }
-    // Cerro café andino
-    for (let x = 0; x < pW; x++) {
-      const hillY = panelsY + 11 + Math.floor(Math.abs(x - 7) * 0.35);
-      PixelGFX.line(ctx, p2X + x, hillY, p2X + x, panelsY + pH - 1, PAL.goreMountain);
-      PixelGFX.pset(ctx, p2X + x, hillY, PAL.white);
+    // Cerro café andino con cresta blanca nítida
+    for (let fx = 0; fx < pW * S; fx++) {
+      const hillY = Math.round((panelsY + 11) * S + Math.abs(fx - 7 * S) * 0.35);
+      PixelGFX.fineRect(ctx, p2X * S + fx, hillY, 1, (panelsY + pH) * S - hillY, PAL.goreMountain);
+      PixelGFX.fineRect(ctx, p2X * S + fx, hillY, 1, 2, PAL.white);
     }
     // Río/camino naranja serpenteante en el valle
     PixelGFX.rect(ctx, p2X, panelsY + 22, pW, 5, '#f4976c');
-    PixelGFX.line(ctx, p2X + 2, panelsY + 16, p2X + 7, panelsY + 17, PAL.goreRiver);
-    PixelGFX.line(ctx, p2X + 7, panelsY + 17, p2X + 2, panelsY + 19, PAL.goreRiver);
-    PixelGFX.line(ctx, p2X + 2, panelsY + 19, p2X + 14, panelsY + 21, PAL.goreRiver);
+    PixelGFX.fineLine(ctx, (p2X + 2) * S, (panelsY + 16) * S, (p2X + 7) * S, (panelsY + 17) * S, PAL.goreRiver, 2);
+    PixelGFX.fineLine(ctx, (p2X + 7) * S, (panelsY + 17) * S, (p2X + 2) * S, (panelsY + 19) * S, PAL.goreRiver, 3);
+    PixelGFX.fineLine(ctx, (p2X + 2) * S, (panelsY + 19) * S, (p2X + 14) * S, (panelsY + 21) * S, PAL.goreRiver, 3);
     PixelGFX.rect(ctx, p2X, panelsY + 21, pW, 2, PAL.goreRiver);
 
     // --- PANEL 3: FRUTICULTURA (MANZANA ROJA Y HOJA VERDE) ---
@@ -541,12 +1088,12 @@ window.MicroCosmos = window.MicroCosmos || {};
     // Colinas verdes agrícolas
     PixelGFX.rect(ctx, p3X, panelsY + 15, pW, 12, '#267339');
     PixelGFX.rect(ctx, p3X, panelsY + 20, pW, 7, '#39b54a');
-    // Manzana roja icónica en primer plano
+    // Manzana roja icónica en primer plano con brillo suave
     PixelGFX.circleFill(ctx, p3X + 10, panelsY + 16, 6, PAL.goreApple);
     PixelGFX.circleFill(ctx, p3X + 13, panelsY + 16, 5, PAL.goreApple);
-    PixelGFX.line(ctx, p3X + 6, panelsY + 14, p3X + 6, panelsY + 18, '#ff758f');
+    PixelGFX.fineLine(ctx, (p3X + 6) * S + 1, (panelsY + 14) * S, (p3X + 6) * S + 1, (panelsY + 18) * S, '#ff758f', 2);
     // Hoja verde y pedúnculo de la manzana
-    PixelGFX.line(ctx, p3X + 12, panelsY + 10, p3X + 15, panelsY + 7, PAL.goreOchre);
+    PixelGFX.fineLine(ctx, (p3X + 12) * S, (panelsY + 10) * S, (p3X + 15) * S, (panelsY + 7) * S, PAL.goreOchre, 2);
     PixelGFX.ellipseFill(ctx, p3X + 9, panelsY + 7, 2, 3, '#267339');
 
     // --- TIPOGRAFÍA INFERIOR GORE (con separación limpia para la tilde de REGIÓN) ---
@@ -559,10 +1106,12 @@ window.MicroCosmos = window.MicroCosmos || {};
   // Estatua ecuestre de O'Higgins + letras 'CORE' en bronce + subtítulo
   // ==========================================================================
   function drawCORELogo(ctx, baseX, baseY) {
-    // 1. Estatua ecuestre en Pixel-Art a la izquierda
+    const S = ns.SCALE || 3;
+    // 1. Estatua ecuestre en Pixel-Art a la izquierda (suavizada con Scale3x)
     PixelGFX.drawSprite(ctx, coreStatueSprite, baseX + 2, baseY);
-    // Espada extendida hacia arriba-izquierda
-    PixelGFX.line(ctx, baseX + 12, baseY + 3, baseX + 2, baseY, '#5d665e');
+    // Espada extendida hacia arriba-izquierda en trazo fino
+    PixelGFX.fineLine(ctx, (baseX + 12) * S, (baseY + 3) * S, (baseX + 2) * S, baseY * S, '#5d665e', 2);
+    PixelGFX.fineLine(ctx, (baseX + 12) * S, (baseY + 3) * S - 1, (baseX + 2) * S, baseY * S - 1, '#8a948b', 1);
 
     // 2. Sigla 'CORE' grande y gruesa en color Bronce (#945f36) a la derecha de la estatua
     const cX = baseX + 34;
@@ -574,26 +1123,26 @@ window.MicroCosmos = window.MicroCosmos || {};
     // Letra 'O' gruesa (13x14)
     drawThickArc(ctx, cX + 20, cY + 7, 7, 3, 0, 360, PAL.coreBronze);
 
-    // Letra 'R' gruesa (11x14)
+    // Letra 'R' gruesa (11x14) con panza redonda y pata diagonal suave
     const rX = cX + 30;
     PixelGFX.rect(ctx, rX, cY, 4, 14, PAL.coreBronze);
-    PixelGFX.rect(ctx, rX + 4, cY, 5, 3, PAL.coreBronze);
-    PixelGFX.rect(ctx, rX + 7, cY + 2, 3, 5, PAL.coreBronze);
-    PixelGFX.rect(ctx, rX + 4, cY + 6, 5, 3, PAL.coreBronze);
-    PixelGFX.line(ctx, rX + 5, cY + 9, rX + 9, cY + 13, PAL.coreBronze);
-    PixelGFX.line(ctx, rX + 6, cY + 9, rX + 10, cY + 13, PAL.coreBronze);
-    PixelGFX.line(ctx, rX + 7, cY + 9, rX + 10, cY + 12, PAL.coreBronze);
+    PixelGFX.rect(ctx, rX + 3, cY, 4, 3, PAL.coreBronze);
+    PixelGFX.rect(ctx, rX + 3, cY + 6, 4, 3, PAL.coreBronze);
+    drawThickArc(ctx, rX + 6, cY + 4.5, 4.5, 1.5, 270, 90, PAL.coreBronze);
+    for (let t = -4; t <= 4; t++) {
+      PixelGFX.fineLine(ctx, (rX + 5) * S + t, (cY + 8) * S, (rX + 9) * S + t, (cY + 14) * S - 1, PAL.coreBronze, 1);
+    }
 
     // Letra 'E' gruesa (10x14)
     const eX = cX + 43;
     PixelGFX.rect(ctx, eX, cY, 4, 14, PAL.coreBronze);
     PixelGFX.rect(ctx, eX + 4, cY, 6, 3, PAL.coreBronze);
-    PixelGFX.rect(ctx, eX + 4, cY + 5, 5, 3, PAL.coreBronze);
+    PixelGFX.rect(ctx, eX + 4, cY + 5.5, 5, 3, PAL.coreBronze);
     PixelGFX.rect(ctx, eX + 4, cY + 11, 6, 3, PAL.coreBronze);
 
     // 3. Subtítulo 'CONSEJO REGIONAL' + Línea gris + 'REGIÓN DE O'HIGGINS'
     drawPixelText3x5(ctx, 'CONSEJO REGIONAL', baseX + 30, baseY + 24, PAL.coreStatueDark, 4);
-    PixelGFX.rect(ctx, baseX + 4, baseY + 32, 90, 2, '#9da3a6');
+    PixelGFX.fineRect(ctx, (baseX + 4) * S, (baseY + 32) * S, 90 * S, 4, '#9da3a6');
     drawPixelText3x5(ctx, 'REGIÓN DE O\'HIGGINS', baseX + 10, baseY + 38, PAL.coreStatueDark, 4);
   }
 
@@ -602,6 +1151,7 @@ window.MicroCosmos = window.MicroCosmos || {};
   // Bloque Bicolor Azul/Rojo con Escudo + Bloque Rojo 'ANID'
   // ==========================================================================
   function drawANIDLogo(ctx, baseX, baseY) {
+    const S = ns.SCALE || 3;
     const logoY = baseY + 2;
     const logoH = 44;
 
@@ -622,13 +1172,13 @@ window.MicroCosmos = window.MicroCosmos || {};
 
     // Texto pixel-art blanco dentro del bloque del Ministerio
     drawPixelText3x5(ctx, 'MIN.', r1X + 3, logoY + 4, PAL.white, 4);
-    drawPixelText3x5(ctx, 'CIENCIA', r1X + 3, logoY + 11, PAL.white, 4);
+    drawPixelText3x5(ctx, 'CIENCIA', r1X + 2, logoY + 11, PAL.white, 4);
     // Líneas limpias de subtítulo institucional ("Tecnología, Conocimiento e Innovación")
-    PixelGFX.rect(ctx, r1X + 3, logoY + 19, 24, 2, PAL.white);
-    PixelGFX.rect(ctx, r1X + 3, logoY + 23, 26, 2, PAL.white);
-    PixelGFX.rect(ctx, r1X + 3, logoY + 27, 21, 2, PAL.white);
+    PixelGFX.fineRect(ctx, (r1X + 3) * S, (logoY + 19) * S, 24 * S, 3, PAL.white);
+    PixelGFX.fineRect(ctx, (r1X + 3) * S, (logoY + 23) * S, 26 * S, 3, PAL.white);
+    PixelGFX.fineRect(ctx, (r1X + 3) * S, (logoY + 27) * S, 21 * S, 3, PAL.white);
     // Pie "Gobierno de Chile"
-    PixelGFX.rect(ctx, r1X + 3, logoY + 39, 25, 2, PAL.white);
+    PixelGFX.fineRect(ctx, (r1X + 3) * S, (logoY + 39) * S, 25 * S, 4, PAL.white);
 
     // --- CALLE BLANCA SEPARADORA (4px) ---
     const r2X = r1X + red1W + 4;
@@ -637,40 +1187,36 @@ window.MicroCosmos = window.MicroCosmos || {};
     // --- BLOQUE DERECHO: ANID (Agencia Nacional de Investigación y Desarrollo) ---
     PixelGFX.rect(ctx, r2X, logoY, red2W, logoH, PAL.anidRed);
 
-    // Sigla 'ANID' en tipografía pixel-art gruesa (5x6 por letra)
-    const ax = r2X + 3;
-    const ay = logoY + 4;
+    // Sigla 'ANID' en tipografía geométrica nítida 960x540
+    const ax = (r2X + 3) * S;
+    const ay = (logoY + 4) * S;
     // 'A'
-    PixelGFX.rect(ctx, ax + 1, ay, 3, 1, PAL.white);
-    PixelGFX.rect(ctx, ax, ay + 1, 2, 5, PAL.white);
-    PixelGFX.rect(ctx, ax + 3, ay + 1, 2, 5, PAL.white);
-    PixelGFX.rect(ctx, ax + 1, ay + 3, 3, 1, PAL.white);
+    PixelGFX.fineLine(ctx, ax + 6, ay, ax + 1, ay + 17, PAL.white, 3);
+    PixelGFX.fineLine(ctx, ax + 8, ay, ax + 13, ay + 17, PAL.white, 3);
+    PixelGFX.fineRect(ctx, ax + 3, ay + 10, 9, 3, PAL.white);
     // 'N'
-    const nx = ax + 7;
-    PixelGFX.rect(ctx, nx, ay, 2, 6, PAL.white);
-    PixelGFX.pset(ctx, nx + 2, ay + 1, PAL.white);
-    PixelGFX.pset(ctx, nx + 2, ay + 2, PAL.white);
-    PixelGFX.pset(ctx, nx + 3, ay + 3, PAL.white);
-    PixelGFX.pset(ctx, nx + 3, ay + 4, PAL.white);
-    PixelGFX.rect(ctx, nx + 4, ay, 2, 6, PAL.white);
+    const nx = ax + 20;
+    PixelGFX.fineRect(ctx, nx, ay, 4, 18, PAL.white);
+    PixelGFX.fineLine(ctx, nx + 2, ay + 1, nx + 13, ay + 16, PAL.white, 3);
+    PixelGFX.fineRect(ctx, nx + 12, ay, 4, 18, PAL.white);
     // 'I'
-    const ix = nx + 8;
-    PixelGFX.rect(ctx, ix, ay, 2, 6, PAL.white);
+    const ix = nx + 21;
+    PixelGFX.fineRect(ctx, ix, ay, 4, 18, PAL.white);
     // 'D'
-    const dx = ix + 4;
-    PixelGFX.rect(ctx, dx, ay, 2, 6, PAL.white);
-    PixelGFX.rect(ctx, dx + 2, ay, 2, 1, PAL.white);
-    PixelGFX.rect(ctx, dx + 2, ay + 5, 2, 1, PAL.white);
-    PixelGFX.rect(ctx, dx + 4, ay + 1, 2, 4, PAL.white);
+    const dx = ix + 9;
+    PixelGFX.fineRect(ctx, dx, ay, 4, 18, PAL.white);
+    PixelGFX.fineRect(ctx, dx + 4, ay, 5, 3, PAL.white);
+    PixelGFX.fineRect(ctx, dx + 4, ay + 15, 5, 3, PAL.white);
+    drawThickArc(ctx, (dx + 8) / S, (ay + 9) / S, 3.0, 1.6, 270, 90, PAL.white);
 
     // Subtítulo "Agencia Nacional de Investigación y Desarrollo"
-    PixelGFX.rect(ctx, r2X + 3, logoY + 13, 21, 2, PAL.white);
-    PixelGFX.rect(ctx, r2X + 3, logoY + 17, 26, 2, PAL.white);
-    PixelGFX.rect(ctx, r2X + 3, logoY + 21, 28, 2, PAL.white);
-    PixelGFX.rect(ctx, r2X + 3, logoY + 25, 23, 2, PAL.white);
+    PixelGFX.fineRect(ctx, (r2X + 3) * S, (logoY + 13) * S, 21 * S, 3, PAL.white);
+    PixelGFX.fineRect(ctx, (r2X + 3) * S, (logoY + 17) * S, 26 * S, 3, PAL.white);
+    PixelGFX.fineRect(ctx, (r2X + 3) * S, (logoY + 21) * S, 28 * S, 3, PAL.white);
+    PixelGFX.fineRect(ctx, (r2X + 3) * S, (logoY + 25) * S, 23 * S, 3, PAL.white);
 
     // Pie "Gobierno de Chile"
-    PixelGFX.rect(ctx, r2X + 3, logoY + 39, 27, 2, PAL.white);
+    PixelGFX.fineRect(ctx, (r2X + 3) * S, (logoY + 39) * S, 27 * S, 4, PAL.white);
   }
 
   /**

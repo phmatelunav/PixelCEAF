@@ -328,7 +328,7 @@ window.MicroCosmos = window.MicroCosmos || {};
       ctx.fillRect(ix, iy, iw, ih);
     },
 
-    rectOutline(ctx, x, y, w, h, color, borderW = (ns.SCALE || 3)) {
+    rectOutline(ctx, x, y, w, h, color, borderW = 2) {
       const S = ns.SCALE || 3;
       const ix = Math.round(x * S);
       const iy = Math.round(y * S);
@@ -355,7 +355,7 @@ window.MicroCosmos = window.MicroCosmos || {};
       ctx.fillRect(ix + iw - borderW, iy, borderW, ih);
     },
 
-    line(ctx, x0, y0, x1, y1, color, lineWidth = (ns.SCALE || 3)) {
+    line(ctx, x0, y0, x1, y1, color, lineWidth = 2) {
       const S = ns.SCALE || 3;
       let ix0 = Math.round(x0 * S);
       let iy0 = Math.round(y0 * S);
@@ -389,11 +389,12 @@ window.MicroCosmos = window.MicroCosmos || {};
       }
     },
 
-    fineLine(ctx, fx0, fy0, fx1, fy1, color) {
+    fineLine(ctx, fx0, fy0, fx1, fy1, color, lineWidth = 1) {
       let ix0 = Math.round(fx0);
       let iy0 = Math.round(fy0);
       const ix1 = Math.round(fx1);
       const iy1 = Math.round(fy1);
+      const lw = Math.max(1, Math.round(lineWidth));
       const cW = ns.CANVAS_WIDTH || 960;
       const cH = ns.CANVAS_HEIGHT || 540;
 
@@ -407,7 +408,7 @@ window.MicroCosmos = window.MicroCosmos || {};
 
       while (true) {
         if (ix0 >= 0 && ix0 < cW && iy0 >= 0 && iy0 < cH) {
-          ctx.fillRect(ix0, iy0, 1, 1);
+          ctx.fillRect(ix0, iy0, lw, lw);
         }
         if (ix0 === ix1 && iy0 === iy1) break;
         const e2 = 2 * err;
@@ -516,7 +517,7 @@ window.MicroCosmos = window.MicroCosmos || {};
       }
     },
 
-    circleOutline(ctx, cx, cy, r, color, thickness = (ns.SCALE || 3)) {
+    circleOutline(ctx, cx, cy, r, color, thickness = 2) {
       const S = ns.SCALE || 3;
       const icx = Math.round(cx * S);
       const icy = Math.round(cy * S);
@@ -686,130 +687,162 @@ window.MicroCosmos = window.MicroCosmos || {};
       const icx = Math.round(cx * S);
       const icy = Math.round(cy * S);
       const r = Math.round(radius * S);
-      if (r <= 0) {
-        PixelGFX.finePset(ctx, icx, icy, color);
+      if (r <= 1) {
+        PixelGFX.fineRect(ctx, icx, icy, 2, 2, color);
+        PixelGFX.finePset(ctx, icx, icy, coreColor);
         return;
       }
       ctx.fillStyle = color;
-      ctx.fillRect(icx - r, icy - Math.floor(S / 2), r * 2 + S, S);
-      ctx.fillRect(icx - Math.floor(S / 2), icy - r, S, r * 2 + S);
-      if (r >= 2 * S) {
-        ctx.fillRect(icx - S, icy - S, S * 2, S * 2);
+      // Brazos finos de 1-2px afilados en las puntas (estética 960x540)
+      ctx.fillRect(icx - r, icy, r * 2 + 1, 1);
+      ctx.fillRect(icx, icy - r, 1, r * 2 + 1);
+      if (r >= 4) {
+        const innerR = Math.max(1, Math.floor(r * 0.55));
+        ctx.fillRect(icx - innerR, icy - 1, innerR * 2 + 1, 3);
+        ctx.fillRect(icx - 1, icy - innerR, 3, innerR * 2 + 1);
+      }
+      if (r >= 6) {
+        ctx.fillRect(icx - 2, icy - 2, 5, 5);
       }
       ctx.fillStyle = coreColor;
-      ctx.fillRect(icx, icy, S, S);
+      ctx.fillRect(icx - 1, icy - 1, 3, 3);
+      ctx.fillStyle = PAL.white;
+      ctx.fillRect(icx, icy, 1, 1);
     },
 
     /**
-     * Dibuja un rectángulo con esquinas biseladas de 1px y relieve interior (ideal para células vegetales y paneles)
+     * Dibuja un rectángulo con esquinas biseladas de alta precisión y relieve interior en 960x540
      */
     bevelRect(ctx, x, y, w, h, fillCol, lightCol, darkCol, outlineCol) {
-      const iw = Math.round(w);
-      const ih = Math.round(h);
-      if (iw <= 2 || ih <= 2) {
-        PixelGFX.rect(ctx, x, y, w, h, fillCol);
+      const S = ns.SCALE || 3;
+      const fx = Math.round(x * S);
+      const fy = Math.round(y * S);
+      const fw = Math.round(w * S);
+      const fh = Math.round(h * S);
+      if (fw <= 4 || fh <= 4) {
+        PixelGFX.fineRect(ctx, fx, fy, fw, fh, fillCol);
         return;
       }
-      // Relleno interior sin las 4 esquinas extremas
-      PixelGFX.rect(ctx, x + 1, y + 1, iw - 2, ih - 2, fillCol);
+      const bev = fw >= 14 && fh >= 14 ? 2 : 1;
+      // Relleno interior con esquinas biseladas
+      PixelGFX.fineRect(ctx, fx + bev, fy + 1, fw - bev * 2, fh - 2, fillCol);
+      PixelGFX.fineRect(ctx, fx + 1, fy + bev, fw - 2, fh - bev * 2, fillCol);
+
       if (outlineCol) {
-        PixelGFX.line(ctx, x + 1, y, x + iw - 2, y, outlineCol);
-        PixelGFX.line(ctx, x + 1, y + ih - 1, x + iw - 2, y + ih - 1, outlineCol);
-        PixelGFX.line(ctx, x, y + 1, x, y + ih - 2, outlineCol);
-        PixelGFX.line(ctx, x + iw - 1, y + 1, x + iw - 1, y + ih - 2, outlineCol);
+        PixelGFX.fineRect(ctx, fx + bev, fy, fw - bev * 2, 1, outlineCol);
+        PixelGFX.fineRect(ctx, fx + bev, fy + fh - 1, fw - bev * 2, 1, outlineCol);
+        PixelGFX.fineRect(ctx, fx, fy + bev, 1, fh - bev * 2, outlineCol);
+        PixelGFX.fineRect(ctx, fx + fw - 1, fy + bev, 1, fh - bev * 2, outlineCol);
+        if (bev === 2) {
+          PixelGFX.finePset(ctx, fx + 1, fy + 1, outlineCol);
+          PixelGFX.finePset(ctx, fx + fw - 2, fy + 1, outlineCol);
+          PixelGFX.finePset(ctx, fx + 1, fy + fh - 2, outlineCol);
+          PixelGFX.finePset(ctx, fx + fw - 2, fy + fh - 2, outlineCol);
+        }
       }
-      if (lightCol && iw > 4 && ih > 4) {
-        PixelGFX.line(ctx, x + 1, y + 1, x + iw - 3, y + 1, lightCol);
-        PixelGFX.line(ctx, x + 1, y + 1, x + 1, y + ih - 3, lightCol);
+      if (lightCol && fw > 8 && fh > 8) {
+        PixelGFX.fineRect(ctx, fx + bev, fy + 1, fw - bev * 2 - 1, 1, lightCol);
+        PixelGFX.fineRect(ctx, fx + 1, fy + bev, 1, fh - bev * 2 - 1, lightCol);
       }
-      if (darkCol && iw > 4 && ih > 4) {
-        PixelGFX.line(ctx, x + 2, y + ih - 2, x + iw - 2, y + ih - 2, darkCol);
-        PixelGFX.line(ctx, x + iw - 2, y + 2, x + iw - 2, y + ih - 2, darkCol);
+      if (darkCol && fw > 8 && fh > 8) {
+        PixelGFX.fineRect(ctx, fx + bev + 1, fy + fh - 2, fw - bev * 2 - 1, 1, darkCol);
+        PixelGFX.fineRect(ctx, fx + fw - 2, fy + bev + 1, 1, fh - bev * 2 - 1, darkCol);
       }
     },
 
     /**
-     * Dibuja una copa frondosa de árbol o arbusto Pixel-Art mediante racimos orgánicos (5 tonos de sombreado)
+     * Dibuja una copa frondosa de árbol o arbusto en alta precisión 960x540 mediante racimos orgánicos (5 tonos)
      */
     foliageCluster(ctx, cx, cy, rx, ry, colors, seed = 0) {
+      const S = ns.SCALE || 3;
       const cShadow = colors[0] || PAL.sakuraShadow;
       const cDeep   = colors[1] || PAL.sakuraDeep;
       const cMid    = colors[2] || PAL.sakuraMid;
       const cLight  = colors[3] || PAL.sakuraLight;
       const cWhite  = colors[4] || PAL.sakuraWhite;
 
-      const icx = Math.round(cx);
-      const icy = Math.round(cy);
-      const irx = Math.max(4, Math.round(rx));
-      const iry = Math.max(3, Math.round(ry));
+      const fcx = Math.round(cx * S);
+      const fcy = Math.round(cy * S);
+      const frx = Math.max(10, Math.round(rx * S));
+      const fry = Math.max(8, Math.round(ry * S));
 
       // 1. Racimos inferiores en sombra profunda (base de la copa)
       const puffsShadow = [
-        { dx: -Math.round(irx * 0.48), dy: Math.round(iry * 0.25), r: Math.max(3, Math.round(iry * 0.58)) },
-        { dx:  Math.round(irx * 0.48), dy: Math.round(iry * 0.28), r: Math.max(3, Math.round(iry * 0.60)) },
-        { dx:  0,                      dy: Math.round(iry * 0.35), r: Math.max(3, Math.round(iry * 0.62)) }
+        { dx: -0.50, dy: 0.26, r: 0.56 },
+        { dx:  0.50, dy: 0.28, r: 0.58 },
+        { dx: -0.18, dy: 0.36, r: 0.60 },
+        { dx:  0.20, dy: 0.34, r: 0.58 }
       ];
       for (let i = 0; i < puffsShadow.length; i++) {
         const p = puffsShadow[i];
-        PixelGFX.circleFill(ctx, icx + p.dx, icy + p.dy, p.r, cShadow);
+        PixelGFX.fineCircleFill(ctx, fcx + p.dx * frx, fcy + p.dy * fry, Math.max(6, fry * p.r), cShadow);
       }
 
       // 2. Racimos medios oscuros (volumen secundario)
       const puffsDeep = [
-        { dx: -Math.round(irx * 0.55), dy: Math.round(iry * 0.05), r: Math.max(3, Math.round(iry * 0.58)) },
-        { dx:  Math.round(irx * 0.52), dy: Math.round(iry * 0.08), r: Math.max(3, Math.round(iry * 0.58)) },
-        { dx: -Math.round(irx * 0.22), dy: Math.round(iry * 0.16), r: Math.max(3, Math.round(iry * 0.65)) },
-        { dx:  Math.round(irx * 0.24), dy: Math.round(iry * 0.18), r: Math.max(3, Math.round(iry * 0.64)) }
+        { dx: -0.58, dy: 0.06, r: 0.54 },
+        { dx:  0.54, dy: 0.08, r: 0.54 },
+        { dx: -0.26, dy: 0.16, r: 0.64 },
+        { dx:  0.26, dy: 0.18, r: 0.62 },
+        { dx:  0.00, dy: 0.12, r: 0.60 }
       ];
       for (let i = 0; i < puffsDeep.length; i++) {
         const p = puffsDeep[i];
-        PixelGFX.circleFill(ctx, icx + p.dx, icy + p.dy, p.r, cDeep);
+        PixelGFX.fineCircleFill(ctx, fcx + p.dx * frx, fcy + p.dy * fry, Math.max(6, fry * p.r), cDeep);
       }
 
       // 3. Racimos principales de tono medio
       const puffsMid = [
-        { dx: -Math.round(irx * 0.44), dy: -Math.round(iry * 0.10), r: Math.max(3, Math.round(iry * 0.56)) },
-        { dx:  Math.round(irx * 0.40), dy: -Math.round(iry * 0.06), r: Math.max(3, Math.round(iry * 0.54)) },
-        { dx:  0,                      dy: -Math.round(iry * 0.18), r: Math.max(3, Math.round(iry * 0.66)) },
-        { dx: -Math.round(irx * 0.16), dy:  Math.round(iry * 0.04), r: Math.max(3, Math.round(iry * 0.58)) }
+        { dx: -0.46, dy: -0.10, r: 0.54 },
+        { dx:  0.42, dy: -0.06, r: 0.52 },
+        { dx:  0.00, dy: -0.18, r: 0.65 },
+        { dx: -0.20, dy:  0.02, r: 0.56 },
+        { dx:  0.18, dy:  0.00, r: 0.54 }
       ];
       for (let i = 0; i < puffsMid.length; i++) {
         const p = puffsMid[i];
-        PixelGFX.circleFill(ctx, icx + p.dx, icy + p.dy, p.r, cMid);
+        PixelGFX.fineCircleFill(ctx, fcx + p.dx * frx, fcy + p.dy * fry, Math.max(5, fry * p.r), cMid);
       }
 
       // 4. Racimos iluminados por el sol (arriba e izquierda)
       const puffsLight = [
-        { dx: -Math.round(irx * 0.38), dy: -Math.round(iry * 0.22), r: Math.max(2, Math.round(iry * 0.44)) },
-        { dx: -Math.round(irx * 0.06), dy: -Math.round(iry * 0.32), r: Math.max(2, Math.round(iry * 0.48)) },
-        { dx:  Math.round(irx * 0.28), dy: -Math.round(iry * 0.18), r: Math.max(2, Math.round(iry * 0.40)) }
+        { dx: -0.38, dy: -0.24, r: 0.44 },
+        { dx: -0.08, dy: -0.34, r: 0.48 },
+        { dx:  0.26, dy: -0.20, r: 0.40 },
+        { dx: -0.22, dy: -0.12, r: 0.38 }
       ];
       for (let i = 0; i < puffsLight.length; i++) {
         const p = puffsLight[i];
-        PixelGFX.circleFill(ctx, icx + p.dx, icy + p.dy, p.r, cLight);
+        PixelGFX.fineCircleFill(ctx, fcx + p.dx * frx, fcy + p.dy * fry, Math.max(4, fry * p.r), cLight);
       }
 
       // 5. Destellos especulares y pétalos individuales en las crestas superiores
       const puffsWhite = [
-        { dx: -Math.round(irx * 0.40), dy: -Math.round(iry * 0.34), r: Math.max(1, Math.round(iry * 0.24)) },
-        { dx: -Math.round(irx * 0.10), dy: -Math.round(iry * 0.44), r: Math.max(1, Math.round(iry * 0.28)) },
-        { dx:  Math.round(irx * 0.22), dy: -Math.round(iry * 0.30), r: Math.max(1, Math.round(iry * 0.22)) }
+        { dx: -0.40, dy: -0.36, r: 0.25 },
+        { dx: -0.10, dy: -0.46, r: 0.28 },
+        { dx:  0.20, dy: -0.32, r: 0.22 }
       ];
       for (let i = 0; i < puffsWhite.length; i++) {
         const p = puffsWhite[i];
-        PixelGFX.circleFill(ctx, icx + p.dx, icy + p.dy, p.r, cWhite);
+        PixelGFX.fineCircleFill(ctx, fcx + p.dx * frx, fcy + p.dy * fry, Math.max(2, fry * p.r), cWhite);
       }
 
-      // Textura de racimos sueltos de píxeles (pixel clusters de hojas/flores)
-      const numClusters = Math.max(5, Math.round((irx + iry) * 0.45));
+      // 6. Micro-racimos de hojas/flores en resolución nativa 960x540 (textura detallada de follaje)
+      const numClusters = Math.max(18, Math.round((frx + fry) * 0.65));
       for (let k = 0; k < numClusters; k++) {
         const angle = (k / numClusters) * Math.PI * 2 + seed * 0.7;
-        const dist = 0.45 + MathUtil.hash(k * 7.1 + seed) * 0.42;
-        const px = Math.round(icx + Math.cos(angle) * irx * dist);
-        const py = Math.round(icy + Math.sin(angle) * iry * dist);
-        const col = Math.sin(angle) < -0.15 ? cWhite : (Math.sin(angle) < 0.3 ? cLight : cDeep);
-        PixelGFX.pset(ctx, px, py, col);
-        if (k % 2 === 0) PixelGFX.pset(ctx, px + 1, py, col);
+        const hVal = MathUtil.hash(k * 7.1 + seed);
+        const dist = 0.35 + hVal * 0.58;
+        const px = Math.round(fcx + Math.cos(angle) * frx * dist);
+        const py = Math.round(fcy + Math.sin(angle) * fry * dist);
+        const sinA = Math.sin(angle);
+        const col = sinA < -0.25 ? cWhite : (sinA < 0.15 ? cLight : (sinA < 0.55 ? cMid : cDeep));
+        // Pequeña hoja / flor de 2x2 o 3x2 px nativos
+        PixelGFX.fineRect(ctx, px, py, 2, 2, col);
+        if (k % 3 === 0) {
+          PixelGFX.finePset(ctx, px + 2, py, col);
+          PixelGFX.finePset(ctx, px, py - 1, sinA < 0 ? cWhite : cLight);
+        }
       }
     },
 
@@ -824,13 +857,13 @@ window.MicroCosmos = window.MicroCosmos || {};
       PixelGFX.rect(ctx, startX, yTop, endX - startX, h, PAL.cabinetBody);
       // Sombra proyectada por el borde saliente de la mesada
       PixelGFX.rect(ctx, startX, yTop, endX - startX, 2, PAL.cabinetShadow);
-      PixelGFX.line(ctx, startX, yTop + 2, endX - 1, yTop + 2, PAL.cabinetBorder);
+      PixelGFX.line(ctx, startX, yTop + 2, endX - 1, yTop + 2, PAL.cabinetBorder, 1);
 
       // Zócalo sanitario inferior retraído
       const kickH = Math.min(6, Math.max(3, Math.floor(h * 0.14)));
       const kickY = yBottom - kickH;
       PixelGFX.rect(ctx, startX, kickY, endX - startX, kickH, PAL.cabinetKickplate);
-      PixelGFX.line(ctx, startX, kickY, endX - 1, kickY, PAL.metalDark);
+      PixelGFX.line(ctx, startX, kickY, endX - 1, kickY, PAL.metalDark, 2);
 
       // Módulos de cajoneras y puertas cada 40px
       const moduleW = 40;
@@ -844,20 +877,26 @@ window.MicroCosmos = window.MicroCosmos || {};
 
       for (let mx = startX + 4; mx + moduleW - 4 <= endX; mx += moduleW) {
         const mw = moduleW - 4;
-        // Cajón superior con bisel y tirador metálico
+        // Cajón superior con bisel fino y tirador metálico cepillado
         PixelGFX.bevelRect(ctx, mx, cabTop, mw, drawerH, PAL.cabinetDoor, PAL.white, PAL.cabinetBorder, PAL.cabinetShadow);
-        PixelGFX.rect(ctx, mx + Math.floor(mw / 2) - 5, cabTop + Math.floor(drawerH / 2) - 1, 10, 2, PAL.metalLight);
-        PixelGFX.line(ctx, mx + Math.floor(mw / 2) - 5, cabTop + Math.floor(drawerH / 2) - 1, mx + Math.floor(mw / 2) + 4, cabTop + Math.floor(drawerH / 2) - 1, PAL.metalShine);
+        const handleX = mx + Math.floor(mw / 2) - 5;
+        const handleY = cabTop + Math.floor(drawerH / 2) - 1;
+        PixelGFX.rect(ctx, handleX, handleY, 10, 2, PAL.metalMid);
+        PixelGFX.line(ctx, handleX, handleY, handleX + 9, handleY, PAL.metalShine, 1);
+        PixelGFX.pset(ctx, handleX, handleY + 1, PAL.metalDark);
+        PixelGFX.pset(ctx, handleX + 9, handleY + 1, PAL.metalDark);
 
         // Puertas dobles inferiores del gabinete
         if (doorH >= 8) {
           const halfW = Math.floor((mw - 2) / 2);
           // Puerta izquierda
           PixelGFX.bevelRect(ctx, mx, doorY, halfW, doorH, PAL.cabinetDoor, PAL.white, PAL.cabinetBorder, PAL.cabinetShadow);
-          PixelGFX.rect(ctx, mx + halfW - 4, doorY + 4, 1, Math.min(7, doorH - 6), PAL.metalLight);
+          PixelGFX.rect(ctx, mx + halfW - 3, doorY + 4, 1, Math.min(7, doorH - 6), PAL.metalMid);
+          PixelGFX.line(ctx, mx + halfW - 3, doorY + 4, mx + halfW - 3, doorY + 4 + Math.min(7, doorH - 6) - 1, PAL.metalShine, 1);
           // Puerta derecha
           PixelGFX.bevelRect(ctx, mx + halfW + 2, doorY, mw - halfW - 2, doorH, PAL.cabinetDoor, PAL.white, PAL.cabinetBorder, PAL.cabinetShadow);
-          PixelGFX.rect(ctx, mx + halfW + 5, doorY + 4, 1, Math.min(7, doorH - 6), PAL.metalLight);
+          PixelGFX.rect(ctx, mx + halfW + 4, doorY + 4, 1, Math.min(7, doorH - 6), PAL.metalMid);
+          PixelGFX.line(ctx, mx + halfW + 4, doorY + 4, mx + halfW + 4, doorY + 4 + Math.min(7, doorH - 6) - 1, PAL.metalShine, 1);
         }
       }
     }

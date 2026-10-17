@@ -21,29 +21,14 @@ window.MicroCosmos = window.MicroCosmos || {};
   ns.LOOP_DURATION = 66.5;
 
   // ==========================================================================
-  // 1. CIELO DE O'HIGGINS Y PEQUEÑAS ÁGUILAS CHILENAS EN VUELO
+  // 1. CIELO DE O'HIGGINS Y PEQUEÑAS ÁGUILAS CHILENAS EN VUELO (NATIVO 960x540)
   // ==========================================================================
   function drawSkyAndChileanEagles(ctx, time) {
-    const skyBands = [
-      { y0: 0,  y1: 28,  col: '#5b98e3', next: '#6faaf0' },
-      { y0: 28, y1: 58,  col: '#6faaf0', next: '#86bdf7' },
-      { y0: 58, y1: 88,  col: '#86bdf7', next: '#a2cffb' },
-      { y0: 88, y1: 120, col: '#a2cffb', next: '#badcfd' }
-    ];
-
-    for (let b = 0; b < skyBands.length; b++) {
-      const band = skyBands[b];
-      PixelGFX.rect(ctx, 0, band.y0, WIDTH, band.y1 - band.y0, band.col);
-      // Transición tramada Bayer 4x4 entre franjas de cielo
-      for (let py = band.y1 - 6; py < band.y1; py++) {
-        const t = (py - (band.y1 - 6)) / 6;
-        for (let px = 0; px < WIDTH; px++) {
-          if (t > MathUtil.bayer(px, py)) {
-            PixelGFX.pset(ctx, px, py, band.next);
-          }
-        }
-      }
-    }
+    // Gradientes atmosféricos tramados en Bayer 4x4 nativo (1x1px)
+    PixelGFX.ditherGradientV(ctx, 0, 0, WIDTH, 34, '#5b98e3', '#6faaf0');
+    PixelGFX.ditherGradientV(ctx, 0, 34, WIDTH, 34, '#6faaf0', '#86bdf7');
+    PixelGFX.ditherGradientV(ctx, 0, 68, WIDTH, 32, '#86bdf7', '#a2cffb');
+    PixelGFX.ditherGradientV(ctx, 0, 100, WIDTH, 22, '#a2cffb', '#badcfd');
 
     // Pequeñas Águilas Chilenas (Aguiluchos / Peucos de CEAF) planeando en corrientes térmicas
     const eagles = [
@@ -59,10 +44,9 @@ window.MicroCosmos = window.MicroCosmos || {};
 
     for (let i = 0; i < eagles.length; i++) {
       const e = eagles[i];
-      const ex = Math.round(e.x0 + time * e.vx + Math.sin(time * 0.9 + i * 2) * 4);
-      const ey = Math.round(e.y0 + time * e.vy + Math.sin(time * e.freq + i * 1.7) * e.ampY);
+      const ex = e.x0 + time * e.vx + Math.sin(time * 0.9 + i * 2) * 4;
+      const ey = e.y0 + time * e.vy + Math.sin(time * e.freq + i * 1.7) * e.ampY;
 
-      // Alternar entre planeo en "V" (típico del aguilucho/peuco) y breves aleteos
       const cycle = (time * 0.7 + i * 0.31) % 1.0;
       let wingState = 0; // 0 = planeo diedro en V, 1 = alas arriba, -1 = alas abajo
       if (cycle > e.glideRatio) {
@@ -75,90 +59,99 @@ window.MicroCosmos = window.MicroCosmos || {};
   }
 
   /**
-   * Dibuja una pequeña águila chilena (peuco / aguilucho) en Pixel-Art
-   * con dorso pardo-oscuro, hombros rojizos, pecho claro y puntas primarias negras.
+   * Dibuja una pequeña águila chilena (peuco / aguilucho) en Pixel-Art nativo 960x540
+   * con envergadura detallada (~24x12 px nativos), hombros rojizos, pecho claro, cola ahorquillada y rémiges primarias.
    */
   function drawChileanEagle(ctx, cx, cy, wingState, isLarge) {
-    const darkWing = '#232630';
+    const S = ns.SCALE || 3;
+    const fcx = Math.round(cx * S);
+    const fcy = Math.round(cy * S);
+    const darkWing = '#1e222d';
     const brownBack = '#5c4028';
-    const rufousShoulder = '#8c4d27';
-    const lightBelly = '#e2e8f0';
+    const rufousShoulder = '#9e5428';
+    const lightBelly = '#f1f5f9';
+    const beakGold = '#f59e0b';
 
     if (!isLarge) {
-      // Silueta lejana de 5x3 px
-      PixelGFX.pset(ctx, cx, cy, brownBack);
-      const wy = wingState === 1 ? cy - 1 : (wingState === -1 ? cy + 1 : cy);
-      PixelGFX.pset(ctx, cx - 1, wy, darkWing);
-      PixelGFX.pset(ctx, cx + 1, wy, darkWing);
-      PixelGFX.pset(ctx, cx - 2, wy - (wingState >= 0 ? 1 : 0), darkWing);
-      PixelGFX.pset(ctx, cx + 2, wy - (wingState >= 0 ? 1 : 0), darkWing);
+      // Silueta lejana en alta definición (14x7 px nativos)
+      const wy = wingState === 1 ? -3 : (wingState === -1 ? 3 : -1);
+      PixelGFX.fineLine(ctx, fcx - 6, fcy + wy, fcx, fcy, brownBack, 2);
+      PixelGFX.fineLine(ctx, fcx, fcy, fcx + 6, fcy + wy, brownBack, 2);
+      PixelGFX.fineRect(ctx, fcx - 7, fcy + wy - 1, 2, 2, darkWing);
+      PixelGFX.fineRect(ctx, fcx + 6, fcy + wy - 1, 2, 2, darkWing);
+      PixelGFX.fineRect(ctx, fcx - 1, fcy - 1, 3, 2, lightBelly);
       return;
     }
 
-    // Cuerpo central, cabeza y cola ahorquillada/bandeada (9x5 px)
-    PixelGFX.pset(ctx, cx, cy, brownBack);
-    PixelGFX.pset(ctx, cx + 1, cy, lightBelly); // pecho claro al sol
-    PixelGFX.pset(ctx, cx - 1, cy + 1, darkWing); // cola
+    // Cola abanicada con banda terminal oscura
+    PixelGFX.fineLine(ctx, fcx - 1, fcy + 1, fcx - 5, fcy + 4, brownBack, 2);
+    PixelGFX.fineLine(ctx, fcx - 1, fcy + 1, fcx - 3, fcy + 5, darkWing, 2);
+    // Cuerpo fusiforme, pecho blanco iluminado y cabeza con pico ganchudo
+    PixelGFX.fineRect(ctx, fcx - 2, fcy - 1, 5, 3, brownBack);
+    PixelGFX.fineRect(ctx, fcx, fcy, 4, 2, lightBelly);
+    PixelGFX.fineRect(ctx, fcx + 3, fcy - 1, 2, 2, brownBack);
+    PixelGFX.finePset(ctx, fcx + 5, fcy, beakGold);
 
-    if (wingState === 0) {
-      // Planeo diedro en "V" abierta característico de rapaces chilenas
-      PixelGFX.line(ctx, cx - 3, cy - 1, cx - 1, cy, brownBack);
-      PixelGFX.pset(ctx, cx - 2, cy - 1, rufousShoulder);
-      PixelGFX.pset(ctx, cx - 4, cy - 2, darkWing);
+    const tipDY = wingState === 0 ? -5 : (wingState === 1 ? -9 : 5);
+    const midDY = wingState === 0 ? -2 : (wingState === 1 ? -5 : 2);
 
-      PixelGFX.line(ctx, cx + 1, cy, cx + 3, cy - 1, brownBack);
-      PixelGFX.pset(ctx, cx + 2, cy - 1, rufousShoulder);
-      PixelGFX.pset(ctx, cx + 4, cy - 2, darkWing);
-    } else if (wingState === 1) {
-      // Aleteo arriba
-      PixelGFX.line(ctx, cx - 3, cy - 2, cx - 1, cy, brownBack);
-      PixelGFX.pset(ctx, cx - 3, cy - 3, darkWing);
-      PixelGFX.line(ctx, cx + 1, cy, cx + 3, cy - 2, brownBack);
-      PixelGFX.pset(ctx, cx + 3, cy - 3, darkWing);
-    } else {
-      // Aleteo abajo
-      PixelGFX.line(ctx, cx - 3, cy + 1, cx - 1, cy, brownBack);
-      PixelGFX.pset(ctx, cx - 4, cy + 2, darkWing);
-      PixelGFX.line(ctx, cx + 1, cy, cx + 3, cy + 1, brownBack);
-      PixelGFX.pset(ctx, cx + 4, cy + 2, darkWing);
-    }
+    // Ala izquierda (posterior) con hombro rufo y 3 plumas primarias digitadas
+    PixelGFX.fineLine(ctx, fcx - 1, fcy, fcx - 6, fcy + midDY, rufousShoulder, 2);
+    PixelGFX.fineLine(ctx, fcx - 6, fcy + midDY, fcx - 11, fcy + tipDY, brownBack, 2);
+    PixelGFX.fineLine(ctx, fcx - 9, fcy + tipDY + 1, fcx - 13, fcy + tipDY - 1, darkWing, 1);
+    PixelGFX.fineLine(ctx, fcx - 9, fcy + tipDY + 1, fcx - 13, fcy + tipDY + 1, darkWing, 1);
+    PixelGFX.fineLine(ctx, fcx - 8, fcy + tipDY + 2, fcx - 12, fcy + tipDY + 3, darkWing, 1);
+
+    // Ala derecha (anterior)
+    PixelGFX.fineLine(ctx, fcx + 1, fcy, fcx + 6, fcy + midDY, rufousShoulder, 2);
+    PixelGFX.fineLine(ctx, fcx + 6, fcy + midDY, fcx + 11, fcy + tipDY, brownBack, 2);
+    PixelGFX.fineLine(ctx, fcx + 9, fcy + tipDY + 1, fcx + 13, fcy + tipDY - 1, darkWing, 1);
+    PixelGFX.fineLine(ctx, fcx + 9, fcy + tipDY + 1, fcx + 13, fcy + tipDY + 1, darkWing, 1);
+    PixelGFX.fineLine(ctx, fcx + 8, fcy + tipDY + 2, fcx + 12, fcy + tipDY + 3, darkWing, 1);
   }
 
   // ==========================================================================
-  // 2. ARBOLEDA TRASERA IZQUIERDA (EUCALIPTOS Y ÁLAMOS TRAS EL EDIFICIO)
+  // 2. ARBOLEDA TRASERA IZQUIERDA (EUCALIPTOS Y ÁLAMOS EN 960x540 NATIVO)
   // ==========================================================================
   function drawLacyTreeCrown(ctx, cx, cy, rx, ry, sway, seed) {
+    const S = ns.SCALE || 3;
+    const fcx = Math.round(cx * S);
+    const fcy = Math.round(cy * S);
+    const frx = Math.round(rx * S);
+    const fry = Math.round(ry * S);
     const cDark = '#182b19';
     const cDeep = '#243d25';
     const cMid  = '#335434';
     const cLit  = '#466e46';
+    const cSun  = '#5f8d5e';
 
-    for (let dy = -ry; dy <= ry; dy++) {
-      const py = cy + dy;
-      if (py < 0 || py >= HEIGHT) continue;
-      const vFrac = dy / Math.max(1, ry);
-      // Desplazamiento por viento mayor hacia la punta del árbol
-      const rowSway = Math.round(sway * Math.max(0, 0.6 - vFrac * 0.6));
-      const maxSpan = Math.round(rx * Math.sqrt(Math.max(0, 1 - vFrac * vFrac * 0.85)));
+    // Iteramos en bloques finos de 2x2 píxeles nativos para lograr follaje de eucalipto delicado y aireado
+    for (let fdy = -fry; fdy <= fry; fdy += 2) {
+      const fpy = fcy + fdy;
+      if (fpy < 0 || fpy >= HEIGHT * S) continue;
+      const vFrac = fdy / Math.max(1, fry);
+      const rowSway = Math.round(sway * S * Math.max(0, 0.6 - vFrac * 0.6));
+      const maxSpan = Math.round(frx * Math.sqrt(Math.max(0, 1 - vFrac * vFrac * 0.85)));
 
-      for (let dx = -maxSpan; dx <= maxSpan; dx++) {
-        const px = cx + dx + rowSway;
-        if (px < 0 || px >= WIDTH) continue;
-        // Textura orgánica de racimos de hojas de eucalipto contra el cielo (sin bandas diagonales)
-        const h = Math.floor(MathUtil.hash(dx * 12.7 + dy * 31.3 + seed * 7.1) * 16);
-        const edgeDist = Math.abs(dx) / Math.max(1, maxSpan);
-        if (edgeDist > 0.72 && h < 7) continue; // bordes irregulares abiertos al cielo
-        if (h === 0 || (edgeDist > 0.45 && h === 3)) continue; // huecos de cielo entre ramas
+      for (let fdx = -maxSpan; fdx <= maxSpan; fdx += 2) {
+        const fpx = fcx + fdx + rowSway;
+        if (fpx < 0 || fpx >= WIDTH * S) continue;
+        const h = Math.floor(MathUtil.hash(fdx * 7.3 + fdy * 19.1 + seed * 7.1) * 16);
+        const edgeDist = Math.abs(fdx) / Math.max(1, maxSpan);
+        if (edgeDist > 0.74 && h < 8) continue;
+        if (h === 0 || (edgeDist > 0.48 && h === 3)) continue;
 
         let col = cMid;
-        if (vFrac > 0.35 || dx < -maxSpan * 0.35 || h < 4) {
+        if (vFrac > 0.38 || fdx < -maxSpan * 0.35 || h < 4) {
           col = cDark;
         } else if (h < 9) {
           col = cDeep;
-        } else if (dx > 0 && vFrac < 0.1 && h > 11) {
+        } else if (fdx > maxSpan * 0.2 && vFrac < -0.15 && h >= 14) {
+          col = cSun;
+        } else if (fdx > 0 && vFrac < 0.12 && h > 10) {
           col = cLit;
         }
-        PixelGFX.pset(ctx, px, py, col);
+        PixelGFX.fineRect(ctx, fpx, fpy, 2, 2, col);
       }
     }
   }
@@ -168,16 +161,16 @@ window.MicroCosmos = window.MicroCosmos || {};
     const sway2 = Math.sin(time * 2.5 + 1.2) * 1.4;
 
     // Árbol alto 1 (x = 16..28, y = 60..115, eucalipto esbelto tras el ala izquierda)
-    PixelGFX.line(ctx, 21, 115, 22 + Math.round(sway1 * 0.6), 65, '#26231f');
-    PixelGFX.line(ctx, 21, 84, 17 + Math.round(sway1), 74, '#26231f');
-    PixelGFX.line(ctx, 22, 79, 26 + Math.round(sway1), 70, '#26231f');
+    PixelGFX.line(ctx, 21, 115, 22 + sway1 * 0.6, 65, '#26231f');
+    PixelGFX.line(ctx, 21, 84, 17 + sway1, 74, '#26231f');
+    PixelGFX.line(ctx, 22, 79, 26 + sway1, 70, '#26231f');
     drawLacyTreeCrown(ctx, 21, 68, 5, 10, sway1, 11);
     drawLacyTreeCrown(ctx, 19, 80, 7, 11, sway1 * 0.7, 23);
 
     // Árbol alto 2 (x = 34..47, y = 58..115, segundo eucalipto alto como en Building.png)
-    PixelGFX.line(ctx, 40, 115, 41 + Math.round(sway2 * 0.6), 61, '#26231f');
-    PixelGFX.line(ctx, 40, 78, 36 + Math.round(sway2), 68, '#26231f');
-    PixelGFX.line(ctx, 41, 75, 45 + Math.round(sway2), 66, '#26231f');
+    PixelGFX.line(ctx, 40, 115, 41 + sway2 * 0.6, 61, '#26231f');
+    PixelGFX.line(ctx, 40, 78, 36 + sway2, 68, '#26231f');
+    PixelGFX.line(ctx, 41, 75, 45 + sway2, 66, '#26231f');
     drawLacyTreeCrown(ctx, 41, 64, 5, 9, sway2, 37);
     drawLacyTreeCrown(ctx, 39, 75, 7, 10, sway2 * 0.7, 49);
 
@@ -240,7 +233,7 @@ window.MicroCosmos = window.MicroCosmos || {};
       const baseGlass = rowFrac < 0.35
         ? '#7395b2'
         : (rowFrac < 0.68 ? '#8fb0cc' : '#b4d0e7');
-      PixelGFX.line(ctx, cwX, py, cwX + cwW - 1, py, baseGlass);
+      PixelGFX.rect(ctx, cwX, py, cwW, 1, baseGlass);
     }
 
     // Detalles interiores tras el cristal (escalera derecha, losa de entrepiso y reflejos)
@@ -280,12 +273,6 @@ window.MicroCosmos = window.MicroCosmos || {};
     // ------------------------------------------------------------------------
     // B) TORRE CENTRAL PRINCIPAL CEAF (x = 129 .. 201, y = 52 .. 118)
     // ------------------------------------------------------------------------
-    // Sombra proyectada por la torre central sobre el puente derecho
-    for (let sy = 72; sy < 98; sy++) {
-      const span = Math.min(34, Math.round((sy - 70) * 1.35));
-      PixelGFX.line(ctx, 201, sy, 201 + span, sy, wallShadow);
-    }
-
     // Cuerpo blanco luminoso de la Torre Central
     PixelGFX.rect(ctx, 129, 53, 67, 65, wallWhite);
     PixelGFX.rect(ctx, 131, 52, 63, 45, wallBright);
@@ -295,7 +282,6 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.rect(ctx, 197, 79, 2, 4, '#475569'); // Pequeño equipo/rejilla lateral
     // Pilastra vertical izquierda de la torre (x = 129..132)
     PixelGFX.line(ctx, 132, 53, 132, 117, wallShade);
-    PixelGFX.line(ctx, 140, 76, 143, 78, wallShadow); // Pequeña sombra diagonal en fachada
 
     // Gran Ventanal Cuadrado Volado de la Torre Central (x = 153..186, y = 57..90)
     // Sombra inferior e izquierda bajo el marco del ventanal
@@ -328,22 +314,23 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, winX, winY + 15, winX + winW - 1, winY + 15, mullionDark);
     PixelGFX.line(ctx, winX, winY + 22, winX + winW - 1, winY + 22, mullionMid);
 
-    // Portal de Acceso Principal en Planta Baja con Cielo de Madera a Dos Aguas (x = 136..188, y = 98..118)
+    // Portal de Acceso Principal en Planta Baja con Cielo de Madera a Dos Aguas en 960x540 nativo (x = 136..188, y = 98..118)
     PixelGFX.line(ctx, 131, 96, 194, 96, wallShadow);
     const portalX = 137;
     const portalW = 50;
-    const apexX = portalX + 25; // 162
+    const apexXN = (portalX + 25) * 3; // 486
     // Muro interior recedido bajo el portal
     PixelGFX.rect(ctx, portalX, 100, portalW, 18, '#d5cec4');
-    // Alero triangular de madera cálida (como en Building.png)
-    for (let dx = 0; dx < portalW; dx++) {
-      const px = portalX + dx;
-      const distFromCenter = Math.abs(px - apexX);
-      const roofTopY = 99 + Math.floor(distFromCenter * 0.16);
-      const roofBotY = roofTopY + 4;
-      const woodCol = dx % 3 === 0 ? '#5e3a1e' : (dx % 2 === 0 ? '#875631' : '#734726');
-      PixelGFX.line(ctx, px, roofTopY, px, roofBotY, woodCol);
-      PixelGFX.pset(ctx, px, roofBotY + 1, '#3d2412');
+    // Alero triangular de madera cálida con pendiente suave nativa 1:1 y listones finos
+    for (let fdx = 0; fdx < portalW * 3; fdx++) {
+      const fpx = portalX * 3 + fdx;
+      const distFromCenterN = Math.abs(fpx - apexXN);
+      const roofTopYN = 99 * 3 + Math.round(distFromCenterN * 0.16);
+      const roofBotYN = roofTopYN + 13;
+      const plankIdx = Math.floor(fdx / 2);
+      const woodCol = plankIdx % 4 === 0 ? '#5e3a1e' : (plankIdx % 2 === 0 ? '#875631' : '#734726');
+      PixelGFX.fineRect(ctx, fpx, roofTopYN, 1, roofBotYN - roofTopYN, woodCol);
+      PixelGFX.fineRect(ctx, fpx, roofBotYN, 1, 2, '#3d2412');
     }
     // Revestimiento de madera izquierdo en el acceso
     PixelGFX.rect(ctx, portalX + 1, 104, 8, 14, '#7c4d2b');
@@ -353,18 +340,23 @@ window.MicroCosmos = window.MicroCosmos || {};
     // ------------------------------------------------------------------------
     // Puente conector acristalado (x = 201..242, y = 72..118)
     PixelGFX.rect(ctx, 201, 72, 42, 28, wallShade);
-    // Sombra diagonal proyectada por la torre central sobre el puente
-    for (let py = 72; py < 96; py++) {
-      const shadowEnd = Math.min(241, 201 + Math.round((py - 70) * 1.6));
-      PixelGFX.line(ctx, 201, py, shadowEnd, py, wallDeepShadow);
+    // Sombra diagonal proyectada por la torre central sobre el puente en scanlines nativas 960x540
+    for (let fy = 72 * 3; fy < 96 * 3; fy++) {
+      const shadowEndN = Math.min(241 * 3, Math.round(201 * 3 + (fy - 70 * 3) * 1.6));
+      PixelGFX.fineRect(ctx, 201 * 3, fy, shadowEndN - 201 * 3, 1, wallDeepShadow);
     }
 
-    // Ventanal corrido del puente (x = 202..240, y = 79..98)
-    for (let py = 79; py <= 98; py++) {
-      const shadowLimit = 201 + Math.round((py - 70) * 1.6);
-      for (let px = 202; px <= 240; px++) {
-        const inTowerShadow = px <= shadowLimit;
-        PixelGFX.pset(ctx, px, py, inTowerShadow ? '#466178' : '#7da1bf');
+    // Ventanal corrido del puente con borde de sombra diagonal suave en 960x540 (x = 202..240, y = 79..98)
+    for (let fy = 79 * 3; fy <= 98 * 3 + 2; fy++) {
+      const shadowLimitN = Math.min(241 * 3, Math.round(201 * 3 + (fy - 70 * 3) * 1.6));
+      const winLeftN = 202 * 3;
+      const winRightN = 241 * 3;
+      const splitN = Math.max(winLeftN, Math.min(winRightN, shadowLimitN));
+      if (splitN > winLeftN) {
+        PixelGFX.fineRect(ctx, winLeftN, fy, splitN - winLeftN, 1, '#466178');
+      }
+      if (winRightN > splitN) {
+        PixelGFX.fineRect(ctx, splitN, fy, winRightN - splitN, 1, '#7da1bf');
       }
     }
     for (let gx = 202; gx <= 240; gx += 6) {
@@ -373,11 +365,11 @@ window.MicroCosmos = window.MicroCosmos || {};
     PixelGFX.line(ctx, 202, 85, 240, 85, '#2d3748');
     PixelGFX.line(ctx, 202, 92, 240, 92, '#2d3748');
 
-    // Vano inferior inclinado bajo el puente (acceso al patio interior, y = 98..118)
-    for (let dx = 0; dx < 41; dx++) {
-      const soffitY = 98 + Math.floor(dx * 0.12);
-      PixelGFX.line(ctx, 201 + dx, soffitY, 201 + dx, soffitY + 2, wallShade);
-      PixelGFX.line(ctx, 201 + dx, soffitY + 3, 201 + dx, 118, dx < 26 ? '#18221f' : '#4a5d54');
+    // Vano inferior inclinado bajo el puente en 960x540 nativo (acceso al patio interior, y = 98..118)
+    for (let fdx = 0; fdx < 41 * 3; fdx++) {
+      const soffitYN = 98 * 3 + Math.round(fdx * 0.12);
+      PixelGFX.fineRect(ctx, 201 * 3 + fdx, soffitYN, 1, 7, wallShade);
+      PixelGFX.fineRect(ctx, 201 * 3 + fdx, soffitYN + 7, 1, 118 * 3 - (soffitYN + 7), fdx < 26 * 3 ? '#18221f' : '#4a5d54');
     }
 
     // Volumen derecho saliente (x = 242..301, y = 70..118)
@@ -414,22 +406,30 @@ window.MicroCosmos = window.MicroCosmos || {};
   // 4. SUELO AGRÍCOLA, CAMINO Y PLANTAS EXPERIMENTALES MECIDAS POR EL VIENTO
   // ==========================================================================
   /**
-   * Dibuja una hoja lanceolada individual en Pixel-Art con nervadura y brillo solar
+   * Dibuja una hoja lanceolada individual en Pixel-Art nativo 960x540 con nervadura y brillo solar
    */
   function drawPointedLeaf(ctx, x0, y0, dx, dy, colDark, colMid, colLight) {
-    const x1 = x0 + dx;
-    const y1 = y0 + dy;
-    PixelGFX.line(ctx, x0, y0, x1, y1, colMid);
-    PixelGFX.pset(ctx, x0 + Math.round(dx * 0.4), y0 + Math.round(dy * 0.4) - 1, colLight);
-    PixelGFX.pset(ctx, x0 + Math.round(dx * 0.5), y0 + Math.round(dy * 0.5) + 1, colDark);
-    PixelGFX.pset(ctx, x1, y1, colLight);
+    const S = ns.SCALE || 3;
+    const fx0 = Math.round(x0 * S);
+    const fy0 = Math.round(y0 * S);
+    const fx1 = Math.round((x0 + dx) * S);
+    const fy1 = Math.round((y0 + dy) * S);
+    const mx1 = Math.round(MathUtil.lerp(fx0, fx1, 0.6));
+    const my1 = Math.round(MathUtil.lerp(fy0, fy1, 0.6));
+    const mx2 = Math.round(MathUtil.lerp(fx0, fx1, 0.35));
+    const my2 = Math.round(MathUtil.lerp(fy0, fy1, 0.35));
+    PixelGFX.fineLine(ctx, fx0, fy0, fx1, fy1, colMid, 3);
+    PixelGFX.fineLine(ctx, fx0, fy0 - 1, mx1, my1 - 1, colLight, 2);
+    PixelGFX.fineLine(ctx, mx2, my2 + 2, fx1, fy1 + 1, colDark, 2);
+    PixelGFX.fineRect(ctx, fx1 - 1, fy1 - 1, 2, 2, colLight);
   }
 
   /**
    * Dibuja un arbolito frutal joven ramificado (cerezo/duraznero experimental de CEAF)
-   * con ramas leñosas flexibles y hojas individuales que reaccionan al paso del viento.
+   * con ramas leñosas flexibles y hojas individuales en resolución nativa 960x540.
    */
   function drawBranchingSapling(ctx, cx, potTopY, scale, time, seed, isBushy, isCompact) {
+    const S = ns.SCALE || 3;
     const cDark  = '#1b3b14';
     const cDeep  = '#2d591e';
     const cMid   = '#48822d';
@@ -444,35 +444,37 @@ window.MicroCosmos = window.MicroCosmos || {};
     const swayPx = Math.round(totalWind);
 
     const trunkH = Math.max(5, Math.round((isBushy ? 15 : 12) * scale));
-    const trunkTopX = cx + Math.round(swayPx * 0.65);
+    const trunkTopX = cx + totalWind * 0.65;
     const trunkTopY = potTopY - trunkH;
 
-    // 1. Tronco leñoso joven saliendo del sustrato
-    PixelGFX.line(ctx, cx, potTopY, trunkTopX, trunkTopY, '#4a3625');
-    if (scale >= 0.85) {
-      PixelGFX.line(ctx, cx + 1, potTopY, trunkTopX + 1, trunkTopY + 2, '#6b5038');
+    // 1. Tronco leñoso joven saliendo del sustrato con grosor nativo proporcional
+    const trunkThick = scale >= 0.85 ? 3 : 2;
+    PixelGFX.fineLine(ctx, cx * S, potTopY * S, trunkTopX * S, trunkTopY * S, '#4a3625', trunkThick);
+    if (scale >= 0.7) {
+      PixelGFX.fineLine(ctx, cx * S + 1, potTopY * S, trunkTopX * S + 1, (trunkTopY + 1) * S, '#6b5038', 1);
     }
 
     // 2. Caso especial: arbolito tupido compacto (como el primero de la hilera izquierda en Building.png)
     if (isCompact) {
-      const crownH = Math.round(20 * scale);
-      const crownW = Math.round(11 * scale);
-      const cY = potTopY - Math.round(crownH * 0.68);
-      for (let dy = -Math.round(crownH * 0.55); dy <= Math.round(crownH * 0.45); dy++) {
-        const py = cY + dy;
-        const vFrac = dy / Math.max(1, crownH * 0.55);
-        const rowSway = Math.round(totalWind * (0.6 - vFrac * 0.5));
-        const span = Math.round(crownW * Math.sqrt(Math.max(0, 1 - vFrac * vFrac * 0.88)));
-        for (let dx = -span; dx <= span; dx++) {
-          const px = cx + dx + rowSway;
-          const n = Math.floor(MathUtil.hash(dx * 13.7 + dy * 29.3 + seed * 7.1) * 16);
-          if (Math.abs(dx) >= span - 1 && n < 6) continue;
+      const fCrownH = Math.round(20 * scale * S);
+      const fCrownW = Math.round(11 * scale * S);
+      const fcX = Math.round(cx * S);
+      const fcY = Math.round((potTopY - 20 * scale * 0.68) * S);
+      for (let fdy = -Math.round(fCrownH * 0.55); fdy <= Math.round(fCrownH * 0.45); fdy += 2) {
+        const fpy = fcY + fdy;
+        const vFrac = fdy / Math.max(1, fCrownH * 0.55);
+        const rowSway = Math.round(totalWind * S * (0.6 - vFrac * 0.5));
+        const span = Math.round(fCrownW * Math.sqrt(Math.max(0, 1 - vFrac * vFrac * 0.88)));
+        for (let fdx = -span; fdx <= span; fdx += 2) {
+          const fpx = fcX + fdx + rowSway;
+          const n = Math.floor(MathUtil.hash(fdx * 8.7 + fdy * 19.3 + seed * 7.1) * 16);
+          if (Math.abs(fdx) >= span - 2 && n < 7) continue;
           let col = cMid;
-          if (dx < -span * 0.3 || vFrac > 0.35 || n < 3) col = cDark;
+          if (fdx < -span * 0.3 || vFrac > 0.35 || n < 3) col = cDark;
           else if (n < 7) col = cDeep;
-          else if (dx > 0 && vFrac < 0.15 && n > 10) col = cLight;
-          if (dx > span * 0.15 && vFrac < -0.05 && n >= 14) col = cSun;
-          PixelGFX.pset(ctx, px, py, col);
+          else if (fdx > 0 && vFrac < 0.15 && n > 10) col = cLight;
+          if (fdx > span * 0.15 && vFrac < -0.05 && n >= 14) col = cSun;
+          PixelGFX.fineRect(ctx, fpx, fpy, 2, 2, col);
         }
       }
       return;
@@ -497,32 +499,31 @@ window.MicroCosmos = window.MicroCosmos || {};
     for (let b = 0; b < branches.length; b++) {
       const br = branches[b];
       const bHash = ((seed * 11 + b * 7) % 5) - 2;
-      const startX = Math.round(MathUtil.lerp(cx, trunkTopX, 0.55 + (b % 2) * 0.25));
-      const startY = Math.round(MathUtil.lerp(potTopY, trunkTopY, 0.5 + (b % 3) * 0.2));
+      const startX = MathUtil.lerp(cx, trunkTopX, 0.55 + (b % 2) * 0.25);
+      const startY = MathUtil.lerp(potTopY, trunkTopY, 0.5 + (b % 3) * 0.2);
 
-      // La punta de cada rama se curva con la ráfaga de viento + vibración individual
       const flutter = Math.sin(time * 6.8 + seed * 1.3 + b * 2.1) * 0.9 * scale;
-      const tipX = Math.round(cx + (br.bx + bHash) * scale + totalWind * 1.45 + flutter);
-      const tipY = Math.round(potTopY + (br.by - Math.abs(bHash)) * scale + Math.abs(totalWind) * 0.3);
+      const tipX = cx + (br.bx + bHash) * scale + totalWind * 1.45 + flutter;
+      const tipY = potTopY + (br.by - Math.abs(bHash)) * scale + Math.abs(totalWind) * 0.3;
 
-      // Dibujar rama fina
-      PixelGFX.line(ctx, startX, startY, tipX, tipY, b % 2 === 0 ? '#4d3b27' : '#3b5924');
+      // Dibujar rama fina de 2px nativos
+      PixelGFX.fineLine(ctx, startX * S, startY * S, tipX * S, tipY * S, b % 2 === 0 ? '#4d3b27' : '#3b5924', 2);
 
       // Hojas a lo largo de la rama y en el ápice
       const numLeafNodes = scale < 0.55 ? 2 : (scale < 0.85 ? 3 : 4);
       for (let l = 1; l <= numLeafNodes; l++) {
         const frac = l / numLeafNodes;
-        const lx = Math.round(MathUtil.lerp(startX, tipX, frac));
-        const ly = Math.round(MathUtil.lerp(startY, tipY, frac));
-        const leafFlutter = Math.round(Math.sin(time * 8.4 + seed + b * 3 + l * 2) * 0.8);
+        const lx = MathUtil.lerp(startX, tipX, frac);
+        const ly = MathUtil.lerp(startY, tipY, frac);
+        const leafFlutter = Math.sin(time * 8.4 + seed + b * 3 + l * 2) * 0.8;
 
         if (scale < 0.55) {
-          // Planta lejana: racimos compactos de 2x2 / 3x2 px con luz y sombra
-          PixelGFX.rect(ctx, lx - 1, ly - 1, 3, 2, cMid);
-          PixelGFX.pset(ctx, lx - 1, ly, cDark);
-          PixelGFX.pset(ctx, lx + 1, ly - 1, l === numLeafNodes ? cSun : cLight);
+          const flx = Math.round(lx * S);
+          const fly = Math.round(ly * S);
+          PixelGFX.fineRect(ctx, flx - 3, fly - 2, 7, 5, cMid);
+          PixelGFX.fineRect(ctx, flx - 3, fly + 1, 4, 2, cDark);
+          PixelGFX.fineRect(ctx, flx + 1, fly - 2, 3, 2, l === numLeafNodes ? cSun : cLight);
         } else {
-          // Planta media o cercana: hojas lanceoladas individuales inclinadas por el viento
           const windDir = swayPx >= 0 ? 1 : -1;
           const leafDX = (l % 2 === 0 ? 2 : -2) + windDir;
           const leafDY = (l % 3 === 0 ? -2 : 1) + leafFlutter;
@@ -530,19 +531,18 @@ window.MicroCosmos = window.MicroCosmos || {};
             ctx,
             lx,
             ly,
-            Math.round(leafDX * Math.min(1.3, scale)),
-            Math.round(leafDY * Math.min(1.2, scale)),
+            leafDX * Math.min(1.3, scale),
+            leafDY * Math.min(1.2, scale),
             cDark,
             b % 2 === 0 ? cDeep : cMid,
             l === numLeafNodes ? cSun : cLight
           );
-          // Segunda hoja opuesta en el mismo nudo para frondosidad natural
           drawPointedLeaf(
             ctx,
             lx,
             ly - 1,
-            Math.round((1 + windDir) * scale),
-            Math.round(-2 * scale),
+            (1 + windDir) * scale,
+            -2 * scale,
             cDeep,
             cMid,
             cLight
@@ -556,29 +556,29 @@ window.MicroCosmos = window.MicroCosmos || {};
     // 1. Pradera verde frente al ala derecha (y = 118..121)
     PixelGFX.rect(ctx, 0, 118, WIDTH, 62, '#6e5a49');
     PixelGFX.rect(ctx, 222, 118, 50, 3, '#5d9443');
-    PixelGFX.line(ctx, 224, 118, 270, 118, '#7ec25a');
+    PixelGFX.rect(ctx, 224, 118, 46, 1, '#7ec25a');
 
-    // 2. Gradiente y textura pedregosa del suelo del campo experimental (y = 120..180)
-    for (let py = 120; py < HEIGHT; py++) {
-      const t = (py - 120) / 60;
+    // 2. Gradiente y textura pedregosa del suelo del campo experimental en 960x540 nativo (y = 120..180)
+    for (let fy = 120 * 3; fy < HEIGHT * 3; fy++) {
+      const t = (fy - 120 * 3) / (60 * 3);
       const baseSoil = t < 0.32 ? '#7d6856' : (t < 0.68 ? '#6e5a49' : '#5c4a3b');
-      PixelGFX.line(ctx, 0, py, WIDTH - 1, py, baseSoil);
+      PixelGFX.fineRect(ctx, 0, fy, WIDTH * 3, 1, baseSoil);
 
-      // Camino de tierra compactada a la derecha en perspectiva (x ~ 225..252 arriba -> 188..280 abajo)
-      const laneLeft = Math.round(MathUtil.lerp(224, 186, t));
-      const laneRight = Math.round(MathUtil.lerp(256, 284, t));
-      PixelGFX.line(ctx, laneLeft, py, laneRight, py, t < 0.5 ? '#8c7765' : '#7a6552');
+      const laneLeftN = Math.round(MathUtil.lerp(224 * 3, 186 * 3, t));
+      const laneRightN = Math.round(MathUtil.lerp(256 * 3, 284 * 3, t));
+      PixelGFX.fineRect(ctx, laneLeftN, fy, laneRightN - laneLeftN, 1, t < 0.5 ? '#8c7765' : '#7a6552');
+    }
 
-      // Guijarros, terrones de tierra y textura orgánica del suelo
+    for (let py = 120; py < HEIGHT; py++) {
       const stepX = py < 140 ? 6 : 4;
       for (let px = (py * 3) % stepX; px < WIDTH; px += stepX) {
         const h = (px * 19 + py * 37) % 17;
         if (h === 0) {
-          PixelGFX.pset(ctx, px, py, '#9e8874'); // piedra clara al sol
+          PixelGFX.fineRect(ctx, px * 3, py * 3, 3, 2, '#9e8874');
         } else if (h === 1) {
-          PixelGFX.pset(ctx, px, py, '#453629'); // sombra de terrón
+          PixelGFX.fineRect(ctx, px * 3, py * 3, 3, 2, '#453629');
         } else if (h === 2 && py > 135) {
-          PixelGFX.rect(ctx, px, py, 2, 1, '#8c7561');
+          PixelGFX.fineRect(ctx, px * 3, py * 3, 5, 2, '#8c7561');
         }
       }
     }
@@ -589,9 +589,9 @@ window.MicroCosmos = window.MicroCosmos || {};
       const sy = Math.round(MathUtil.lerp(123, 168, frac * frac * 0.35 + frac * 0.65));
       const sLeft = Math.round(MathUtil.lerp(222, 198, frac));
       const sRight = Math.round(MathUtil.lerp(264, 308, frac));
-      PixelGFX.line(ctx, sLeft, sy, sRight, sy, '#4c3d30');
+      PixelGFX.rect(ctx, sLeft, sy, sRight - sLeft, 1, '#4c3d30');
       if (sy > 138) {
-        PixelGFX.line(ctx, sLeft + 2, sy + 1, sRight, sy + 1, '#544436');
+        PixelGFX.rect(ctx, sLeft + 2, sy + 1, sRight - (sLeft + 2), 1, '#544436');
       }
     }
 
@@ -660,32 +660,30 @@ window.MicroCosmos = window.MicroCosmos || {};
     }
 
     // Manguera/rejilla negra de riego por goteo en el borde inferior izquierdo (fiel a Building.png)
-    PixelGFX.line(ctx, 38, 160, 88, 163, '#1e242b');
-    PixelGFX.line(ctx, 40, 162, 78, 164, '#333c47');
-    PixelGFX.line(ctx, 44, 159, 52, 164, '#1e242b');
+    PixelGFX.fineLine(ctx, 38 * 3, 160 * 3, 88 * 3, 163 * 3, '#1e242b', 2);
+    PixelGFX.fineLine(ctx, 40 * 3, 162 * 3, 78 * 3, 164 * 3, '#333c47', 2);
+    PixelGFX.fineLine(ctx, 44 * 3, 159 * 3, 52 * 3, 164 * 3, '#1e242b', 2);
 
-    // Rama de hojas grandes en primerísimo plano asomando por el borde izquierdo (x = 0..22, y = 104..152, como en Building.png)
-    const fgSway = Math.round(Math.sin(time * 3.4) * 2.0);
-    // Tallo principal desde el borde izquierdo
-    PixelGFX.line(ctx, 0, 114, 12 + fgSway, 128, '#54432a');
-    // Hoja grande superior
-    for (let d = 0; d < 14; d++) {
-      const hw = Math.max(1, Math.round(Math.sin((d / 13) * Math.PI) * 4));
-      PixelGFX.line(ctx, d + fgSway, 110 + d - hw, d + fgSway, 110 + d + hw, d < 7 ? '#5c7d2f' : '#7ea644');
-      PixelGFX.pset(ctx, d + fgSway, 110 + d, '#a2cc60');
+    // Rama de hojas grandes en primerísimo plano asomando por el borde izquierdo en 960x540 nativo (x = 0..22, y = 104..152)
+    const fgSwayN = Math.round(Math.sin(time * 3.4) * 6.0);
+    PixelGFX.fineLine(ctx, 0, 114 * 3, 12 * 3 + fgSwayN, 128 * 3, '#54432a', 3);
+    for (let fd = 0; fd < 42; fd++) {
+      const hwN = Math.max(2, Math.round(Math.sin((fd / 41) * Math.PI) * 12));
+      const fx = fd + fgSwayN;
+      const fy = 110 * 3 + fd;
+      PixelGFX.fineRect(ctx, fx, fy - hwN, 1, hwN * 2 + 1, fd < 21 ? '#5c7d2f' : '#7ea644');
+      PixelGFX.fineRect(ctx, fx, fy - 1, 1, 2, '#a2cc60');
     }
-    // Hoja grande media inclinada hacia abajo
-    for (let d = 0; d < 16; d++) {
-      const lx = Math.round(d * 1.1) + fgSway;
-      const ly = 122 + Math.round(d * 1.15);
-      const hw = Math.max(1, Math.round(Math.sin((d / 15) * Math.PI) * 4.5));
-      PixelGFX.line(ctx, lx - hw, ly, lx + hw, ly, d < 8 ? '#3f5921' : '#587a2f');
-      PixelGFX.pset(ctx, lx, ly, '#8cb34b');
+    for (let fd = 0; fd < 48; fd++) {
+      const fx = Math.round(fd * 1.1) + fgSwayN;
+      const fy = 122 * 3 + Math.round(fd * 1.15);
+      const hwN = Math.max(2, Math.round(Math.sin((fd / 47) * Math.PI) * 13));
+      PixelGFX.fineRect(ctx, fx - hwN, fy, hwN * 2 + 1, 1, fd < 24 ? '#3f5921' : '#587a2f');
+      PixelGFX.fineRect(ctx, fx - 1, fy, 2, 1, '#8cb34b');
     }
-    // Hoja inferior en sombra
-    for (let d = 0; d < 11; d++) {
-      const hw = Math.max(1, Math.round(Math.sin((d / 10) * Math.PI) * 3.5));
-      PixelGFX.line(ctx, d, 136 + d - hw, d, 136 + d + hw, '#2e4218');
+    for (let fd = 0; fd < 33; fd++) {
+      const hwN = Math.max(2, Math.round(Math.sin((fd / 32) * Math.PI) * 10));
+      PixelGFX.fineRect(ctx, fd, 136 * 3 + fd - hwN, 1, hwN * 2 + 1, '#2e4218');
     }
 
     // Ráfagas sutiles de viento y hojas/polen viajando de izquierda a derecha sobre el campo
@@ -694,17 +692,18 @@ window.MicroCosmos = window.MicroCosmos || {};
       const wx = Math.round(wProg * (WIDTH + 40) - 20);
       const wy = 108 + (w * 11) % 46 + Math.round(Math.sin(time * 3.5 + w) * 2);
       if (wx >= 0 && wx < WIDTH - 10) {
-        PixelGFX.line(ctx, wx, wy, wx + 3, wy, '#b5e57b');
-        PixelGFX.pset(ctx, wx + 5, wy - 1, '#e6f7ca');
+        PixelGFX.fineLine(ctx, wx * 3, wy * 3, (wx + 3) * 3, wy * 3, '#b5e57b', 2);
+        PixelGFX.fineRect(ctx, (wx + 5) * 3, (wy - 1) * 3, 2, 2, '#e6f7ca');
       }
     }
   }
 
   /**
-   * Dibuja una maceta experimental cilíndrica (blanca/gris con malla romboidal y musgo)
-   * y su arbolito frutal ramificado mecido por la onda de viento.
+   * Dibuja una maceta experimental cilíndrica en resolución nativa 960x540
+   * (blanca/gris con malla romboidal fina y musgo basal) y su arbolito frutal ramificado.
    */
   function drawExperimentalPotAndSapling(ctx, cx, baseY, scale, time, seed, isBushy, onlyPot, isCompact) {
+    const S = ns.SCALE || 3;
     const potRX = Math.max(2, Math.round(10 * scale));
     const potH = Math.max(4, Math.round(16 * scale));
     const potTopY = baseY - potH;
@@ -713,34 +712,38 @@ window.MicroCosmos = window.MicroCosmos || {};
     const shadowW = Math.round(potRX * 1.9);
     PixelGFX.ellipseFill(ctx, cx - Math.round(potRX * 0.6), baseY - 1, shadowW, Math.max(1, Math.round(2.2 * scale)), '#433529');
 
-    // 2. Cuerpo cilíndrico de la maceta geotextil blanca/gris con musgo basal y malla
-    for (let dy = 0; dy < potH; dy++) {
-      const py = potTopY + dy;
-      if (py >= HEIGHT) continue;
-      const vFrac = dy / potH;
-      // Ligera curvatura de barril
-      const rowRX = Math.round(potRX * (0.92 + Math.sin(vFrac * Math.PI) * 0.1));
+    // 2. Cuerpo cilíndrico de la maceta geotextil en píxeles finos (pasos de 2x2 nativos)
+    const fcx = Math.round(cx * S);
+    const fTopY = Math.round(potTopY * S);
+    const fPotH = Math.round(potH * S);
+    const fPotRX = Math.round(potRX * S);
 
-      for (let dx = -rowRX; dx <= rowRX; dx++) {
-        const px = cx + dx;
-        if (px < 0 || px >= WIDTH) continue;
-        const hFrac = dx / Math.max(1, rowRX); // -1 (izq sombra) .. +1 (der sol)
+    for (let fdy = 0; fdy < fPotH; fdy += 2) {
+      const fpy = fTopY + fdy;
+      if (fpy >= HEIGHT * S) continue;
+      const vFrac = fdy / fPotH;
+      const rowRX = Math.round(fPotRX * (0.92 + Math.sin(vFrac * Math.PI) * 0.1));
 
-        // Color base cilíndrico de la bolsa experimental
-        let col = hFrac < -0.45 ? '#6c7785' : (hFrac < 0.2 ? '#adb8c4' : '#d8e1eb');
+      for (let fdx = -rowRX; fdx <= rowRX; fdx += 2) {
+        const fpx = fcx + fdx;
+        if (fpx < 0 || fpx >= WIDTH * S) continue;
+        const hFrac = fdx / Math.max(1, rowRX);
 
-        // Parches orgánicos de musgo verde oscuro en la mitad inferior de las macetas (sin bandas diagonales)
-        const mossNoise = Math.floor(MathUtil.hash(dx * 11.3 + dy * 23.7 + seed * 5.9) * 16);
+        // Sombreado cilíndrico suave en 4 tonos
+        let col = hFrac < -0.52 ? '#5c6673' : (hFrac < -0.1 ? '#8e9aa8' : (hFrac < 0.45 ? '#c4ced9' : '#e2eaf2'));
+
+        // Parches orgánicos de musgo verde oscuro en la mitad inferior de las macetas
+        const mossNoise = Math.floor(MathUtil.hash(fdx * 7.3 + fdy * 15.7 + seed * 5.9) * 16);
         if (vFrac > 0.35 && hFrac < 0.48 && mossNoise < 7) {
           col = mossNoise < 3 ? '#2f4720' : '#4a6932';
         }
 
-        // Malla metálica hexagonal/romboidal en las macetas de primer plano
-        if (scale >= 0.85 && (((dx + dy) % 3 === 0) || ((dx - dy) % 4 === 0)) && mossNoise > 4) {
-          col = hFrac < 0 ? '#5b6673' : '#9aa6b5';
+        // Malla metálica hexagonal/romboidal fina en las macetas de primer plano
+        if (scale >= 0.78 && (((fdx + fdy) % 6 === 0) || ((fdx - fdy) % 6 === 0)) && mossNoise > 4) {
+          col = hFrac < 0 ? '#525d6b' : '#94a3b8';
         }
 
-        PixelGFX.pset(ctx, px, py, col);
+        PixelGFX.fineRect(ctx, fpx, fpy, 2, 2, col);
       }
     }
 

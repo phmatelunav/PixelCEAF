@@ -19,6 +19,7 @@ window.MicroCosmos = window.MicroCosmos || {};
   mctx.imageSmoothingEnabled = false;
 
   function drawMicroscopeHUD(ctx, time, lensRadius) {
+    const S = ns.SCALE || 3;
     const cx = WIDTH * 0.5;
     const cy = HEIGHT * 0.5;
 
@@ -37,10 +38,10 @@ window.MicroCosmos = window.MicroCosmos || {};
       const rot = time * 1.2;
       for (let i = 0; i < numTicks; i++) {
         const ang = rot + (i * Math.PI * 2) / numTicks;
-        const x0 = cx + Math.round(Math.cos(ang) * Math.max(2, r - 6));
-        const y0 = cy + Math.round(Math.sin(ang) * Math.max(2, r - 6));
-        const x1 = cx + Math.round(Math.cos(ang) * Math.max(3, r - 3));
-        const y1 = cy + Math.round(Math.sin(ang) * Math.max(3, r - 3));
+        const x0 = cx + Math.cos(ang) * Math.max(2, r - 6);
+        const y0 = cy + Math.sin(ang) * Math.max(2, r - 6);
+        const x1 = cx + Math.cos(ang) * Math.max(3, r - 3);
+        const y1 = cy + Math.sin(ang) * Math.max(3, r - 3);
         PixelGFX.line(ctx, x0, y0, x1, y1, i % 2 === 0 ? PAL.chloroplast : PAL.neonCyan);
       }
     }
@@ -48,19 +49,24 @@ window.MicroCosmos = window.MicroCosmos || {};
     if (lensRadius >= 95) {
       const hudAlpha = MathUtil.smoothstep(95, 165, lensRadius);
       if (hudAlpha > 0.1) {
-        const maxDiag = 184;
-        const innerSafeR = 146;
+        // Viñeta óptica de lente confocal en resolución nativa 960x540 con dithering Bayer 4x4 fino (1x1px)
+        const cW = ns.CANVAS_WIDTH || 960;
+        const cH = ns.CANVAS_HEIGHT || 540;
+        const fcx = cx * S;
+        const fcy = cy * S;
+        const maxDiag = 184 * S;
+        const innerSafeR = 148 * S;
         ctx.fillStyle = PAL.void;
-        for (let py = 0; py < HEIGHT; py++) {
-          const dy = (py - cy) * 1.12;
-          for (let px = 0; px < WIDTH; px++) {
-            if (px > 36 && px < WIDTH - 36 && py > 22 && py < HEIGHT - 22) continue;
-            const dx = px - cx;
+        for (let py = 0; py < cH; py++) {
+          const dy = (py - fcy) * 1.12;
+          for (let px = 0; px < cW; px++) {
+            if (px > 38 * S && px < cW - 38 * S && py > 24 * S && py < cH - 24 * S) continue;
+            const dx = px - fcx;
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (dist > innerSafeR) {
               const factor = ((dist - innerSafeR) / (maxDiag - innerSafeR)) * hudAlpha;
               if (factor > MathUtil.bayer(px, py)) {
-                PixelGFX.pset(ctx, px, py, PAL.void);
+                ctx.fillRect(px, py, 1, 1);
               }
             }
           }
@@ -81,7 +87,7 @@ window.MicroCosmos = window.MicroCosmos || {};
           PixelGFX.line(ctx, WIDTH - 7, y, WIDTH - 7 - len, y, isMajor ? brightTick : tickCol);
         }
 
-        PixelGFX.circleOutline(ctx, cx, cy, 154, PAL.neonCyanDark);
+        PixelGFX.fineCircleOutline(ctx, cx * S, cy * S, 154 * S, PAL.neonCyanDark, 1);
 
         // Telemetría Confocal Superior (Canal Láser + Profundidad Z-Stack + Barra de Escala Micrométrica)
         if (hudAlpha > 0.45 && PixelGFX.drawText3x5) {
@@ -113,8 +119,8 @@ window.MicroCosmos = window.MicroCosmos || {};
           const tlW = 68;
           const tlH = 17;
           PixelGFX.rect(ctx, tlX, tlY, tlW, tlH, '#070e1e');
-          PixelGFX.line(ctx, tlX, tlY, tlX + tlW - 1, tlY, '#1e3a5f');
-          PixelGFX.line(ctx, tlX, tlY + tlH - 1, tlX + tlW - 1, tlY + tlH - 1, '#1e3a5f');
+          PixelGFX.fineRect(ctx, tlX * S, tlY * S, tlW * S, 2, '#1e3a5f');
+          PixelGFX.fineRect(ctx, tlX * S, (tlY + tlH) * S - 2, tlW * S, 2, '#1e3a5f');
           PixelGFX.rect(ctx, tlX, tlY, 2, tlH, laserCol);
 
           // Indicador LED láser pulsante + longitud de onda
@@ -133,8 +139,8 @@ window.MicroCosmos = window.MicroCosmos || {};
           const trX = WIDTH - trW - 6;
           const trY = 6;
           PixelGFX.rect(ctx, trX, trY, trW, trH, '#070e1e');
-          PixelGFX.line(ctx, trX, trY, trX + trW - 1, trY, '#1e3a5f');
-          PixelGFX.line(ctx, trX, trY + trH - 1, trX + trW - 1, trY + trH - 1, '#1e3a5f');
+          PixelGFX.fineRect(ctx, trX * S, trY * S, trW * S, 2, '#1e3a5f');
+          PixelGFX.fineRect(ctx, trX * S, (trY + trH) * S - 2, trW * S, 2, '#1e3a5f');
           PixelGFX.rect(ctx, trX + trW - 2, trY, 2, tlH, laserCol);
 
           const labelX = trX + Math.round((trW - scaleLabel.length * 4) * 0.5);
@@ -208,6 +214,7 @@ window.MicroCosmos = window.MicroCosmos || {};
   ];
 
   function drawScientificHUDCaption(ctx, time) {
+    const S = ns.SCALE || 3;
     const introDur = ns.INTRO_DURATION || 6.5;
     if (!hudCaptionsEnabled || !PixelGFX.drawText3x5) return;
 
@@ -253,32 +260,37 @@ window.MicroCosmos = window.MicroCosmos || {};
     const bh = 12;
     const bw = 22 + fullLabel.length * 4 + 6;
 
-    // Fondo oscuro con cola derecha tramada en Bayer 4x4 para máxima legibilidad sobre fondos blancos o oscuros
-    for (let py = by; py < by + bh; py++) {
-      for (let px = bx; px < bx + bw; px++) {
-        const isRightTail = px >= bx + bw - 8;
-        const edgeFade = isRightTail ? (bx + bw - px) / 8 : 1.0;
+    // Fondo oscuro con cola derecha tramada en Bayer 4x4 nativo 960x540 (1x1px)
+    const fbx = bx * S;
+    const fby = by * S;
+    const fbw = bw * S;
+    const fbh = bh * S;
+    ctx.fillStyle = '#070e1e';
+    for (let py = fby; py < fby + fbh; py++) {
+      for (let px = fbx; px < fbx + fbw; px++) {
+        const isRightTail = px >= fbx + fbw - 8 * S;
+        const edgeFade = isRightTail ? (fbx + fbw - px) / (8 * S) : 1.0;
         const threshold = (!isRightTail && fadeAlpha > 0.85) ? 1.1 : fadeAlpha * edgeFade;
         if (threshold > MathUtil.bayer(px, py)) {
-          PixelGFX.pset(ctx, px, py, '#070e1e');
+          ctx.fillRect(px, py, 1, 1);
         }
       }
     }
 
     // Borde superior/inferior sutil y barra lateral del color de acento de la escena
     if (fadeAlpha > 0.35) {
-      PixelGFX.line(ctx, bx, by, bx + bw - 6, by, '#1e3a5f');
-      PixelGFX.line(ctx, bx, by + bh - 1, bx + bw - 6, by + bh - 1, '#1e3a5f');
+      PixelGFX.fineRect(ctx, fbx, fby, fbw - 6 * S, 2, '#1e3a5f');
+      PixelGFX.fineRect(ctx, fbx, fby + fbh - 2, fbw - 6 * S, 2, '#1e3a5f');
       PixelGFX.rect(ctx, bx, by, 2, bh, activeCap.accent);
 
-      // Código numérico de escena (00..09) + separador + título en tipografía 3x5
-      PixelGFX.drawText3x5(ctx, activeCap.code, bx + 5, by + 4, activeCap.accent, 4);
-      PixelGFX.pset(ctx, bx + 15, by + 6, PAL.metalLight);
-      PixelGFX.drawText3x5(ctx, visibleLabel, bx + 19, by + 4, PAL.white, 4);
+      // Código numérico de escena (00..09) + separador + título en tipografía 7x11 nativa
+      PixelGFX.drawText3x5(ctx, activeCap.code, bx + 5, by + 3.5, activeCap.accent, 4);
+      PixelGFX.fineRect(ctx, (bx + 15) * S, (by + 4) * S, 2, 12, '#334155');
+      PixelGFX.drawText3x5(ctx, visibleLabel, bx + 19, by + 3.5, PAL.white, 4);
 
       // Cursor parpadeante mientras escribe el rótulo
       if (charCount < fullLabel.length && Math.floor(time * 16) % 2 === 0) {
-        PixelGFX.rect(ctx, bx + 19 + charCount * 4, by + 4, 2, 5, activeCap.accent);
+        PixelGFX.rect(ctx, bx + 19 + charCount * 4, by + 3.5, 2, 5, activeCap.accent);
       }
     }
   }
